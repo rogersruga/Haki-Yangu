@@ -1,6 +1,6 @@
 # Haki Yangu 🛡️🇰🇪
 
-**Haki Yangu** is a civic education mobile application built with Flutter. It simplifies legal information, enables anonymous reporting of injustice, and educates users on human rights and civic responsibilities through interactive quizzes — all in Swahili and English.
+**Haki Yangu** is a civic education mobile application built with Flutter. It simplifies legal information, enables anonymous reporting of injustice, and educates users on human rights and civic responsibilities through interactive quizzes.
 
 ---
 
@@ -9,7 +9,6 @@
 In Kenya, many citizens struggle to access, understand, or defend their rights. Haki Yangu aims to change that by offering:
 
 - 🏛️ **Justice Simplified** – Legal topics explained in everyday language  
-- 🔒 **Ripoti Salama** – An anonymous reporting system for corruption or abuse  
 - 🧠 **Jua Haki Zako** – Interactive quizzes to teach civic knowledge and responsibilities  
 
 The app is community-focused, multilingual, and designed to empower users at the grassroots level.
@@ -20,7 +19,6 @@ The app is community-focused, multilingual, and designed to empower users at the
 
 - [ ] Home dashboard with quick access to all modules  
 - [ ] Categorized law summaries (Justice Simplified)  
-- [ ] Anonymous reporting with secure encryption (Ripoti Salama)  
 - [ ] Civic education quiz engine (Jua Haki Zako)  
 - [ ] Swahili + English language support  
 - [ ] Firebase backend for storage and authentication  

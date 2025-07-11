@@ -7,8 +7,8 @@ Haki Yangu is a civic education mobile application designed to simplify legal an
 
 **Target Audience:**
 
-* Kenyan youth (ages 15–35)
-* General public interested in civic empowerment
+* Kenyan youth (ages 15–35).
+* General public interested in civic empowerment.
 * NGOs, civic educators, and government institutions
 
 **Platforms:** Android & iOS (developed in Flutter)

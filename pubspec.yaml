@@ -35,6 +35,11 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # For onboarding and splash screen
+  flutter_native_splash: ^2.4.1
+  shared_preferences: ^2.3.2
+  smooth_page_indicator: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

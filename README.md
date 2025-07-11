@@ -27,7 +27,7 @@ The app is community-focused, multilingual, and designed to empower users at the
 
 ## 🛠️ Tech Stack
 
-- **Flutter** – Cross-platform app framework  
+- **Flutter** – Cross-platform app framework
 - **Firebase** – Authentication, Firestore, Analytics  
 - **Dart** – Programming language  
 - **M-Pesa/Stripe (Future)** – For donations and payments  

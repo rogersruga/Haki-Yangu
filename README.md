@@ -34,6 +34,21 @@ The app is community-focused, multilingual, and designed to empower users at the
 
 ---
 
+## 🔐 Firebase Setup (Required to Run)
+
+This project uses Firebase services (e.g., Auth, Firestore).  
+The file `android/app/google-services.json` is required to connect the app to Firebase.
+
+To run the project:
+
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Create a Firebase project
+3. Register your Android app (use your app's package name)
+4. Download the `google-services.json` file
+5. Place it inside `android/app/`
+
+---
+
 ## 📦 Getting Started (Coming Soon)
 
 Project setup and contribution guide will be added once the development environment is live.

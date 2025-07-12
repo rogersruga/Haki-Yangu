@@ -10,15 +10,17 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  late AnimationController _pulseAnimationController;
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
       title: "Know Your Rights",
       description: "Learn about your constitutional rights and civic responsibilities as a Kenyan citizen.",
-      icon: Icons.book_outlined,
+      icon: Icons.lightbulb_outline,
       color: const Color(0xFF1B5E20),
     ),
     OnboardingPage(
@@ -36,8 +38,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+
+    // Initialize pulse animation controller
+    _pulseAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    // Start the pulse animation and repeat it
+    _pulseAnimationController.repeat(reverse: true);
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
+    _pulseAnimationController.dispose();
     super.dispose();
   }
 
@@ -182,19 +199,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: page.color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              page.icon,
-              size: 60,
-              color: page.color,
-            ),
+          // Container with pulse animation, static icon
+          AnimatedBuilder(
+            animation: _pulseAnimationController,
+            builder: (context, child) {
+              // Create a pulse effect that scales the container between 0.9 and 1.1
+              final pulseValue = 0.9 + (_pulseAnimationController.value * 0.2);
+              return Transform.scale(
+                scale: pulseValue,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: page.color.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    page.icon,
+                    size: 60,
+                    color: page.color,
+                  ),
+                ),
+              );
+            },
           ),
           
           const SizedBox(height: 40),

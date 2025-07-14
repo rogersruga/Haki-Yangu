@@ -25,7 +25,12 @@ class AuthService {
 
   GoogleSignIn get googleSignIn {
     try {
-      _googleSignIn ??= GoogleSignIn();
+      _googleSignIn ??= GoogleSignIn(
+        scopes: [
+          'email',
+          'profile',
+        ],
+      );
       return _googleSignIn!;
     } catch (e) {
       if (kDebugMode) {
@@ -116,16 +121,31 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      if (kDebugMode) {
+        print('🔵 Starting Google Sign-In process...');
+      }
+
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
         // User canceled the sign-in
-        return null;
+        if (kDebugMode) {
+          print('🟡 User canceled Google Sign-In');
+        }
+        return null; // Return null instead of throwing error for cancellation
+      }
+
+      if (kDebugMode) {
+        print('🟢 Google user obtained: ${googleUser.email}');
       }
 
       // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      if (kDebugMode) {
+        print('🔵 Google auth tokens obtained');
+      }
 
       // Create a new credential
       final credential = GoogleAuthProvider.credential(
@@ -133,16 +153,67 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
+      if (kDebugMode) {
+        print('🔵 Signing in to Firebase...');
+      }
+
       // Sign in to Firebase with the Google credential
       final UserCredential result = await auth.signInWithCredential(credential);
+
+      if (kDebugMode) {
+        print('🟢 Firebase sign-in successful: ${result.user?.email}');
+      }
+
       return result;
     } on FirebaseAuthException catch (e) {
+      if (kDebugMode) {
+        print('🔴 Firebase Auth Error: ${e.code} - ${e.message}');
+      }
       throw _handleAuthException(e);
     } catch (e) {
       if (kDebugMode) {
-        print('Google Sign-In Error: $e');
+        print('🔴 Google Sign-In Error: $e');
+        print('🔴 Error type: ${e.runtimeType}');
       }
-      throw 'Failed to sign in with Google. Please try again.';
+
+      // Provide more specific error messages
+      String errorMessage = 'Failed to sign in with Google.';
+      String errorStr = e.toString().toLowerCase();
+
+      if (errorStr.contains('network') || errorStr.contains('connection')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorStr.contains('canceled') || errorStr.contains('cancelled')) {
+        errorMessage = 'Google Sign-In was canceled. Please try again.';
+      } else if (errorStr.contains('platformexception')) {
+        errorMessage = 'Google Sign-In service error. Please ensure Google Play Services is updated.';
+      } else if (errorStr.contains('sign_in_failed')) {
+        errorMessage = 'Google Sign-In failed. Please try again.';
+      }
+
+      throw errorMessage;
+    }
+  }
+
+  // Test Google Sign-In configuration
+  Future<bool> testGoogleSignInConfiguration() async {
+    try {
+      if (kDebugMode) {
+        print('🔵 Testing Google Sign-In configuration...');
+      }
+
+      // Check if we can access the service
+      await googleSignIn.isSignedIn();
+
+      if (kDebugMode) {
+        print('🟢 Google Sign-In configuration test passed');
+      }
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        print('🔴 Google Sign-In configuration test failed: $e');
+      }
+      return false;
     }
   }
 

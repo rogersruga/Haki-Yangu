@@ -47,6 +47,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Show loading message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Creating your account...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
       final result = await _authService.signUpWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -54,6 +65,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (result != null && mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate to home screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
@@ -62,8 +83,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text('Signup Error: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _signUpWithEmail(),
+            ),
           ),
         );
       }
@@ -88,19 +115,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Show loading message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Starting Google Sign-In...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
       final result = await _authService.signInWithGoogle();
 
       if (result != null && mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully signed in with Google!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate to home screen
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
+      } else {
+        throw 'Google Sign-In was canceled. Please try again.';
       }
     } catch (e) {
       if (mounted) {
+        String errorMessage = e.toString();
+
+        // Provide helpful error messages
+        if (errorMessage.contains('PlatformException')) {
+          errorMessage = 'Google Sign-In service error. Please ensure Google Play Services is updated and try again.';
+        } else if (errorMessage.contains('network')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (errorMessage.contains('canceled')) {
+          errorMessage = 'Google Sign-In was canceled. Please try again.';
+        } else if (errorMessage.contains('configuration') || errorMessage.contains('not properly configured')) {
+          errorMessage = 'Google Sign-In configuration issue. Please try again or use email signup.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () => _signUpWithGoogle(),
+            ),
           ),
         );
       }

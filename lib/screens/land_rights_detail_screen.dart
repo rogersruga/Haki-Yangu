@@ -174,7 +174,7 @@ class _LandRightsDetailScreenState extends State<LandRightsDetailScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                '5 min read',
+                '7 min read',
                 style: TextStyle(
                   fontSize: 12,
                   color: const Color(0xFF7B1FA2),

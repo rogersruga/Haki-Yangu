@@ -13,8 +13,11 @@ class LearnScreen extends StatefulWidget {
   State<LearnScreen> createState() => _LearnScreenState();
 }
 
+enum SortOrder { none, aToZ, zToA }
+
 class _LearnScreenState extends State<LearnScreen> {
   final TextEditingController _searchController = TextEditingController();
+  SortOrder _currentSortOrder = SortOrder.none;
   
   // Legal categories data
   final List<LegalCategory> _categories = [
@@ -73,7 +76,7 @@ class _LearnScreenState extends State<LearnScreen> {
   void _filterCategories(String query) {
     setState(() {
       if (query.isEmpty) {
-        _filteredCategories = _categories;
+        _filteredCategories = List.from(_categories);
       } else {
         _filteredCategories = _categories
             .where((category) =>
@@ -81,7 +84,160 @@ class _LearnScreenState extends State<LearnScreen> {
                 category.subtitle.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
+      _applySorting();
     });
+  }
+
+  void _applySorting() {
+    switch (_currentSortOrder) {
+      case SortOrder.aToZ:
+        _filteredCategories.sort((a, b) => a.title.compareTo(b.title));
+        break;
+      case SortOrder.zToA:
+        _filteredCategories.sort((a, b) => b.title.compareTo(a.title));
+        break;
+      case SortOrder.none:
+        // Keep original order - do nothing
+        break;
+    }
+  }
+
+  void _showFilterOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              Text(
+                'Sort Modules',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Sort options
+              _buildSortOption(
+                title: 'Default Order',
+                subtitle: 'Original category order',
+                icon: Icons.list,
+                isSelected: _currentSortOrder == SortOrder.none,
+                onTap: () => _setSortOrder(SortOrder.none),
+              ),
+              _buildSortOption(
+                title: 'A to Z',
+                subtitle: 'Sort alphabetically ascending',
+                icon: Icons.sort_by_alpha,
+                isSelected: _currentSortOrder == SortOrder.aToZ,
+                onTap: () => _setSortOrder(SortOrder.aToZ),
+              ),
+              _buildSortOption(
+                title: 'Z to A',
+                subtitle: 'Sort alphabetically descending',
+                icon: Icons.sort_by_alpha,
+                isSelected: _currentSortOrder == SortOrder.zToA,
+                onTap: () => _setSortOrder(SortOrder.zToA),
+              ),
+
+              const SizedBox(height: 40),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF7B1FA2).withValues(alpha: 0.1)
+              : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? const Color(0xFF7B1FA2) : Colors.grey[600],
+          size: 20,
+        ),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          color: isSelected ? const Color(0xFF7B1FA2) : Colors.grey[800],
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey[600],
+        ),
+      ),
+      trailing: isSelected
+          ? const Icon(
+              Icons.check_circle,
+              color: Color(0xFF7B1FA2),
+              size: 20,
+            )
+          : null,
+      onTap: () {
+        onTap();
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _setSortOrder(SortOrder sortOrder) {
+    setState(() {
+      _currentSortOrder = sortOrder;
+      _filterCategories(_searchController.text);
+    });
+  }
+
+  String _getSortOrderText() {
+    switch (_currentSortOrder) {
+      case SortOrder.aToZ:
+        return ' • Sorted A-Z';
+      case SortOrder.zToA:
+        return ' • Sorted Z-A';
+      case SortOrder.none:
+        return '';
+    }
   }
 
   @override
@@ -177,7 +333,7 @@ class _LearnScreenState extends State<LearnScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose a category to learn about your rights',
+            'Choose a module and start learning about your rights',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -242,11 +398,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   ],
                 ),
                 child: IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Filter options coming soon!')),
-                    );
-                  },
+                  onPressed: _showFilterOptions,
                   icon: const Icon(
                     Icons.tune,
                     color: Color(0xFF7B1FA2),
@@ -265,7 +417,7 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                '${_filteredCategories.length} categories available',
+                '${_filteredCategories.length} modules available${_getSortOrderText()}',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey[600],

@@ -4,6 +4,7 @@ import 'employment_law_detail_screen.dart';
 import 'gender_equality_detail_screen.dart';
 import 'elections_act_detail_screen.dart';
 import 'healthcare_rights_detail_screen.dart';
+import 'bill_of_rights_detail_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -42,8 +43,8 @@ class _LearnScreenState extends State<LearnScreen> {
       color: const Color(0xFF00BCD4), // Cyan
     ),
     LegalCategory(
-      title: 'Freedom of Speech',
-      subtitle: 'expression rights',
+      title: 'Bill of Rights',
+      subtitle: 'rights and freedoms',
       icon: Icons.record_voice_over,
       color: const Color(0xFFFF5722), // Deep Orange
     ),
@@ -328,6 +329,12 @@ class _LearnScreenState extends State<LearnScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const HealthcareRightsDetailScreen(),
+            ),
+          );
+        } else if (category.title.trim() == 'Bill of Rights') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const BillOfRightsDetailScreen(),
             ),
           );
         } else {

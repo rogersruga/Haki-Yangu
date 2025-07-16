@@ -3,6 +3,7 @@ import 'land_rights_detail_screen.dart';
 import 'employment_law_detail_screen.dart';
 import 'gender_equality_detail_screen.dart';
 import 'elections_act_detail_screen.dart';
+import 'healthcare_rights_detail_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -321,6 +322,12 @@ class _LearnScreenState extends State<LearnScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const ElectionsActDetailScreen(),
+            ),
+          );
+        } else if (category.title.trim() == 'Healthcare Rights') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const HealthcareRightsDetailScreen(),
             ),
           );
         } else {

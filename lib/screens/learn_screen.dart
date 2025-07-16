@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'land_rights_detail_screen.dart';
 import 'employment_law_detail_screen.dart';
+import 'gender_equality_detail_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -333,17 +334,22 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildCategoryCard(LegalCategory category) {
     return GestureDetector(
       onTap: () {
-        // Temporary test - always go to employment law screen
-        if (category.title.contains('Employment')) {
+        if (category.title.trim() == 'Land Rights') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const LandRightsDetailScreen(),
+            ),
+          );
+        } else if (category.title.contains('Employment')) {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const EmploymentLawDetailScreen(),
             ),
           );
-        } else if (category.title.trim() == 'Land Rights') {
+        } else if (category.title.trim() == 'Gender Equality') {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const LandRightsDetailScreen(),
+              builder: (context) => const GenderEqualityDetailScreen(),
             ),
           );
         } else {

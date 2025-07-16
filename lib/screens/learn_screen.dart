@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'land_rights_detail_screen.dart';
+import 'employment_law_detail_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -332,7 +333,14 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildCategoryCard(LegalCategory category) {
     return GestureDetector(
       onTap: () {
-        if (category.title == 'Land Rights') {
+        // Temporary test - always go to employment law screen
+        if (category.title.contains('Employment')) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const EmploymentLawDetailScreen(),
+            ),
+          );
+        } else if (category.title.trim() == 'Land Rights') {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const LandRightsDetailScreen(),

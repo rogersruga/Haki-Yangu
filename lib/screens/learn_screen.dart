@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'land_rights_detail_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -331,12 +332,20 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildCategoryCard(LegalCategory category) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${category.title} details coming soon!'),
-            backgroundColor: category.color,
-          ),
-        );
+        if (category.title == 'Land Rights') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const LandRightsDetailScreen(),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${category.title} details coming soon!'),
+              backgroundColor: category.color,
+            ),
+          );
+        }
       },
       child: Container(
         decoration: BoxDecoration(

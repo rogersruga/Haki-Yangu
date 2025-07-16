@@ -4,42 +4,154 @@ import '../services/auth_service.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MainScreen> createState() => _MainScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final authService = AuthService();
+
+  final List<Widget> _screens = [
+    const HomeScreenContent(),
+    const PlaceholderScreen(title: 'Learn', subtitle: 'Educational content coming soon', icon: Icons.school),
+    const PlaceholderScreen(title: 'Quiz', subtitle: 'Interactive quizzes coming soon', icon: Icons.quiz),
+    const ProfileScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
-
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
-        child: _selectedIndex == 0
-            ? _buildHomeContent(userName)
-            : _selectedIndex == 3
-                ? const ProfileScreen()
-                : _buildPlaceholderContent(),
+        child: _screens[_selectedIndex],
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _buildHomeContent(String userName) {
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.2),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF7B1FA2),
+        unselectedItemColor: Colors.grey[600],
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school),
+            label: 'Learn',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.quiz),
+            label: 'Quiz',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PlaceholderScreen extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const PlaceholderScreen({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 80,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HomeScreenContent extends StatelessWidget {
+  const HomeScreenContent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+    final authService = AuthService();
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Section with gradient
-          _buildHeaderSection(userName),
+          _buildHeaderSection(userName, authService, context),
 
           const SizedBox(height: 24),
 
@@ -49,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
 
           // Explore Features Section
-          _buildFeaturesSection(),
+          _buildFeaturesSection(context),
 
           const SizedBox(height: 24),
 
@@ -61,7 +173,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-  Widget _buildHeaderSection(String userName) {
+
+  Widget _buildHeaderSection(String userName, AuthService authService, BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
     return Container(
@@ -120,7 +233,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        // TODO: Implement notifications
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Notifications coming soon!')),
                         );
@@ -137,14 +249,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (value == 'logout') {
                           try {
                             await authService.signOut();
-                            if (mounted) {
+                            if (context.mounted) {
                               Navigator.of(context).pushAndRemoveUntil(
                                 MaterialPageRoute(builder: (context) => const AuthScreen()),
                                 (route) => false,
                               );
                             }
                           } catch (e) {
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Error signing out: $e'),
@@ -243,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _buildStatCard(
               title: 'Rights Learned',
-              value: '0', // TODO: Get from user data
+              value: '0',
               icon: Icons.school,
               color: Colors.blue,
             ),
@@ -252,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _buildStatCard(
               title: 'Quiz Score',
-              value: '0%', // TODO: Get from user data
+              value: '0%',
               icon: Icons.quiz,
               color: Colors.green,
             ),
@@ -261,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _buildStatCard(
               title: 'Streak Days',
-              value: '0', // TODO: Get from user data
+              value: '0',
               icon: Icons.local_fire_department,
               color: Colors.orange,
             ),
@@ -321,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeaturesSection() {
+  Widget _buildFeaturesSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
@@ -340,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: 'Justice Simplified',
             subtitle: 'Learn rights in simple language',
             icon: Icons.menu_book,
-            color: const Color(0xFF7B1FA2), // Purple
+            color: const Color(0xFF7B1FA2),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Justice Simplified coming soon!')),
@@ -352,7 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: 'Know Your Rights',
             subtitle: 'Civic quiz section',
             icon: Icons.quiz,
-            color: const Color(0xFF388E3C), // Green
+            color: const Color(0xFF388E3C),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Quiz section coming soon!')),
@@ -364,11 +476,11 @@ class _HomeScreenState extends State<HomeScreen> {
             title: 'Profile',
             subtitle: 'Access to user progress and badges',
             icon: Icons.person,
-            color: const Color(0xFFE91E63), // Pink
+            color: const Color(0xFFE91E63),
             onTap: () {
-              setState(() {
-                _selectedIndex = 3; // Navigate to profile tab
-              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Navigate to profile tab')),
+              );
             },
           ),
           const SizedBox(height: 12),
@@ -376,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: 'Ask Haki',
             subtitle: 'AI chatbot integration for civic questions',
             icon: Icons.chat,
-            color: const Color(0xFFFF9800), // Orange
+            color: const Color(0xFFFF9800),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('AI Assistant coming soon!')),
@@ -518,118 +630,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderContent() {
-    String title = '';
-    String subtitle = '';
-    IconData icon = Icons.home;
-
-    switch (_selectedIndex) {
-      case 1:
-        title = 'Learn';
-        subtitle = 'Educational content coming soon';
-        icon = Icons.school;
-        break;
-      case 2:
-        title = 'Quiz';
-        subtitle = 'Interactive quizzes coming soon';
-        icon = Icons.quiz;
-        break;
-      case 3:
-        title = 'Profile';
-        subtitle = 'User profile coming soon';
-        icon = Icons.person;
-        break;
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF7B1FA2),
-        unselectedItemColor: Colors.grey[600],
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school),
-            label: 'Learn',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.quiz),
-            label: 'Quiz',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
           ),
         ],
       ),

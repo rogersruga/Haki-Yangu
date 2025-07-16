@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
+import 'learn_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,7 +17,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = [
     const HomeScreenContent(),
-    const PlaceholderScreen(title: 'Learn', subtitle: 'Educational content coming soon', icon: Icons.school),
+    const LearnScreen(),
     const PlaceholderScreen(title: 'Quiz', subtitle: 'Interactive quizzes coming soon', icon: Icons.quiz),
     const ProfileScreen(),
   ];

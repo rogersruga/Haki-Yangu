@@ -209,7 +209,7 @@ class _EmploymentLawDetailScreenState extends State<EmploymentLawDetailScreen> {
               ),
               const SizedBox(width: 4),
               Text(
-                '7 min read',
+                '10 min read',
                 style: TextStyle(
                   fontSize: 12,
                   color: const Color(0xFF7B1FA2),

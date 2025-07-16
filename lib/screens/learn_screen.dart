@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'land_rights_detail_screen.dart';
 import 'employment_law_detail_screen.dart';
 import 'gender_equality_detail_screen.dart';
+import 'elections_act_detail_screen.dart';
 
 class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
@@ -34,34 +35,10 @@ class _LearnScreenState extends State<LearnScreen> {
       color: const Color(0xFFFF9800), // Orange
     ),
     LegalCategory(
-      title: 'Youth & Education',
-      subtitle: 'student rights',
-      icon: Icons.school,
-      color: const Color(0xFF9C27B0), // Purple variant
-    ),
-    LegalCategory(
-      title: 'Criminal Justice',
-      subtitle: 'legal protection',
-      icon: Icons.security,
-      color: const Color(0xFFF44336), // Red
-    ),
-    LegalCategory(
       title: 'Healthcare Rights',
       subtitle: 'medical access',
       icon: Icons.favorite,
       color: const Color(0xFF00BCD4), // Cyan
-    ),
-    LegalCategory(
-      title: 'Family Law',
-      subtitle: 'marriage & children',
-      icon: Icons.family_restroom,
-      color: const Color(0xFFE91E63), // Pink
-    ),
-    LegalCategory(
-      title: 'Environment',
-      subtitle: 'clean & safe',
-      icon: Icons.eco,
-      color: const Color(0xFF8BC34A), // Light Green
     ),
     LegalCategory(
       title: 'Freedom of Speech',
@@ -70,22 +47,10 @@ class _LearnScreenState extends State<LearnScreen> {
       color: const Color(0xFFFF5722), // Deep Orange
     ),
     LegalCategory(
-      title: 'Voting Rights',
-      subtitle: 'democracy participation',
+      title: 'Elections Act',
+      subtitle: 'electoral processes',
       icon: Icons.how_to_vote,
       color: const Color(0xFF3F51B5), // Indigo
-    ),
-    LegalCategory(
-      title: 'Disability Rights',
-      subtitle: 'accessibility & inclusion',
-      icon: Icons.accessible,
-      color: const Color(0xFF009688), // Teal
-    ),
-    LegalCategory(
-      title: 'Consumer Rights',
-      subtitle: 'fair trade',
-      icon: Icons.shopping_cart,
-      color: const Color(0xFF673AB7), // Deep Purple
     ),
   ];
 
@@ -350,6 +315,12 @@ class _LearnScreenState extends State<LearnScreen> {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const GenderEqualityDetailScreen(),
+            ),
+          );
+        } else if (category.title.trim() == 'Elections Act') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const ElectionsActDetailScreen(),
             ),
           );
         } else {

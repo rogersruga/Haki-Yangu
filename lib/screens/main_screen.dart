@@ -355,7 +355,7 @@ class HomeScreenContent extends StatelessWidget {
         children: [
           Expanded(
             child: _buildStatCard(
-              title: 'Rights Learned',
+              title: 'Modules Completed',
               value: '0',
               icon: Icons.school,
               color: Colors.blue,

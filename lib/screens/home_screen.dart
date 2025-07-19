@@ -242,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Expanded(
             child: _buildStatCard(
-              title: 'Modules Completed',
+              title: 'Completed',
               value: '0', // TODO: Get from user data
               icon: Icons.school,
               color: Colors.blue,

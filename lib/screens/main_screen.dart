@@ -5,6 +5,7 @@ import '../models/user_profile.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 import 'learn_screen.dart';
+import 'haki_chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -521,12 +522,15 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
           const SizedBox(height: 12),
           _buildFeatureCard(
             title: 'Ask Haki',
-            subtitle: 'AI chatbot integration for civic questions',
+            subtitle: 'AI chatbot for constitutional law questions',
             icon: Icons.chat,
             color: const Color(0xFFFF9800),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('AI Assistant coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HakiChatScreen(),
+                ),
               );
             },
           ),

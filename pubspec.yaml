@@ -48,6 +48,10 @@ dependencies:
 
   # Connectivity
   connectivity_plus: ^6.1.0
+
+  # HTTP requests for AI API
+  http: ^1.2.2
+
   google_fonts: ^6.2.1
 
 dev_dependencies:

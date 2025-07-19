@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_screen.dart';
+import 'services/firestore_service.dart';
+import 'services/offline_service.dart';
+import 'services/sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +51,26 @@ void main() async {
 
     if (kDebugMode) {
       print('Firebase initialized successfully');
+    }
+
+    // Initialize Firestore, Offline, and Sync services
+    try {
+      final firestoreService = FirestoreService();
+      final offlineService = OfflineService();
+      final syncService = SyncService();
+
+      await firestoreService.initialize();
+      await offlineService.initialize();
+      await syncService.initialize();
+
+      if (kDebugMode) {
+        print('All services initialized successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error initializing services: $e');
+      }
+      // Continue without services if initialization fails
     }
   } catch (e) {
     if (kDebugMode) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../models/user_profile.dart';
 import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,26 +13,59 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final authService = AuthService();
+  UserProfile? userProfile;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      final profile = await authService.getUserProfile();
+      if (mounted) {
+        setState(() {
+          userProfile = profile;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
+    final userName = userProfile?.displayName ??
+                     user?.displayName ??
+                     user?.email?.split('@')[0] ??
+                     'User';
     
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Section
-              _buildHeaderSection(userName),
-              
-              const SizedBox(height: 24),
-              
-              // Stats/Progress Overview
-              _buildStatsSection(),
+        child: isLoading
+            ? const Center(
+                child: CircularProgressIndicator(),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Section
+                    _buildHeaderSection(userName),
+
+                    const SizedBox(height: 24),
+
+                    // Stats/Progress Overview
+                    _buildStatsSection(),
               
               const SizedBox(height: 24),
               
@@ -278,9 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Progress indicator
                 Row(
                   children: [
-                    const Text(
-                      '0 of 10 milestones unlocked',
-                      style: TextStyle(
+                    Text(
+                      '${userProfile?.progress.totalLessonsCompleted ?? 0} of 20 lessons completed',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                       ),
@@ -295,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
-                        widthFactor: 0.0, // 0% progress for new users
+                        widthFactor: ((userProfile?.progress.totalLessonsCompleted ?? 0) / 20).clamp(0.0, 1.0),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -321,10 +355,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.2,
             children: [
-              _buildStatCard('0', 'Quizzes\nCompleted', Icons.quiz),
-              _buildStatCard('0h', 'Time\nLearning', Icons.access_time),
-              _buildStatCard('0%', 'Average\nScore', Icons.trending_up),
-              _buildStatCard('0', 'Daily\nStreak', Icons.local_fire_department),
+              _buildStatCard(
+                userProfile?.progress.totalQuizzesCompleted.toString() ?? '0',
+                'Quizzes\nCompleted',
+                Icons.quiz,
+              ),
+              _buildStatCard(
+                '${userProfile?.progress.totalLessonsCompleted ?? 0}',
+                'Lessons\nCompleted',
+                Icons.school,
+              ),
+              _buildStatCard(
+                '${userProfile?.progress.averageQuizScore.toStringAsFixed(0) ?? '0'}%',
+                'Average\nScore',
+                Icons.trending_up,
+              ),
+              _buildStatCard(
+                userProfile?.progress.currentStreak.toString() ?? '0',
+                'Daily\nStreak',
+                Icons.local_fire_department,
+              ),
             ],
           ),
         ],

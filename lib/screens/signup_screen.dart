@@ -119,6 +119,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
+            content: Text('Initializing Google Sign-In...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Initialize Google Sign-In first
+      final bool initialized = await _authService.initializeGoogleSignIn();
+      if (!initialized) {
+        throw 'Google Sign-In is not available. Please ensure Google Play Services is updated and try again.';
+      }
+
+      // Show sign-in progress
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text('Starting Google Sign-In...'),
             backgroundColor: Colors.blue,
             duration: Duration(seconds: 2),
@@ -160,16 +177,41 @@ class _SignUpScreenState extends State<SignUpScreen> {
           errorMessage = 'Google Sign-In configuration issue. Please try again or use email signup.';
         }
 
+        // Show detailed error message in a dialog for better visibility
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Google Sign-Up Error'),
+              content: SingleChildScrollView(
+                child: Text(
+                  errorMessage,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _signUpWithGoogle(); // Retry
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            );
+          },
+        );
+
+        // Also show a brief snackbar
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
+          const SnackBar(
+            content: Text('Google Sign-Up failed. Tap for details.'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: () => _signUpWithGoogle(),
-            ),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -494,7 +536,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Google sign up button
+                        // Google sign up button - TEMPORARILY DISABLED
+                        /*
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
@@ -515,6 +558,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
+                          ),
+                        ),
+                        */
+
+                        // Placeholder message for disabled Google Sign-In
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.white.withValues(alpha: 0.7), size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Google Sign-In temporarily unavailable',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 

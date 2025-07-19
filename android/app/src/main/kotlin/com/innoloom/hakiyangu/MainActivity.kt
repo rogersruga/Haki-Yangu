@@ -1,4 +1,4 @@
-package com.example.haki_yangu
+package com.innoloom.hakiyangu
 
 import io.flutter.embedding.android.FlutterActivity
 

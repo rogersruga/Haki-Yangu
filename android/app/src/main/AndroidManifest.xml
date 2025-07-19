@@ -11,7 +11,7 @@
         android:name="com.innoloom.hakiyangu.MainApplication"
         android:icon="@mipmap/ic_launcher">
         <activity
-            android:name="com.example.haki_yangu.MainActivity"
+            android:name="com.innoloom.hakiyangu.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:taskAffinity=""

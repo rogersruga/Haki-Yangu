@@ -62,19 +62,87 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Show loading message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Initializing Google Sign-In...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Initialize Google Sign-In first
+      final bool initialized = await _authService.initializeGoogleSignIn();
+      if (!initialized) {
+        throw 'Google Sign-In is not available. Please ensure Google Play Services is updated and try again.';
+      }
+
+      // Show sign-in progress
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Starting Google Sign-In...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+
       final result = await _authService.signInWithGoogle();
 
       if (result != null && mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Successfully signed in with Google!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       }
     } catch (e) {
       if (mounted) {
+        // Show detailed error message in a dialog for better visibility
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Google Sign-In Error'),
+              content: SingleChildScrollView(
+                child: Text(
+                  e.toString(),
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('OK'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _signInWithGoogle(); // Retry
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            );
+          },
+        );
+
+        // Also show a brief snackbar
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
+          const SnackBar(
+            content: Text('Google Sign-In failed. Tap for details.'),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -325,7 +393,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Google sign in button
+                        // Google sign in button - TEMPORARILY DISABLED
+                        /*
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
@@ -346,6 +415,33 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
+                          ),
+                        ),
+                        */
+
+                        // Placeholder message for disabled Google Sign-In
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.info_outline, color: Colors.white.withValues(alpha: 0.7), size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Google Sign-In temporarily unavailable',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 

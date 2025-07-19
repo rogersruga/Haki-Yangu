@@ -125,20 +125,39 @@ class AuthService {
     required String password,
   }) async {
     try {
+      if (kDebugMode) {
+        print('🔵 Attempting login for: $email');
+      }
+
       final UserCredential result = await auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // Update last login time in Firestore
+      if (kDebugMode) {
+        print('🟢 Login successful for: ${result.user?.email}');
+      }
+
+      // Update last login time in Firestore (non-blocking)
       if (result.user != null) {
-        await _updateUserLastLogin(result.user!);
+        // Run Firestore update in background to avoid blocking login
+        _updateUserLastLogin(result.user!).catchError((e) {
+          if (kDebugMode) {
+            print('Background Firestore update failed: $e');
+          }
+        });
       }
 
       return result;
     } on FirebaseAuthException catch (e) {
+      if (kDebugMode) {
+        print('🔴 Firebase Auth error: ${e.code} - ${e.message}');
+      }
       throw _handleAuthException(e);
     } catch (e) {
+      if (kDebugMode) {
+        print('🔴 Unexpected login error: $e');
+      }
       throw 'An unexpected error occurred. Please try again.';
     }
   }
@@ -692,5 +711,43 @@ class AuthService {
         {'uid': profile.uid, 'profile': profile.toFirestore()},
       );
     }
+  }
+
+  // Test Firebase connectivity
+  Future<Map<String, dynamic>> testFirebaseConnectivity() async {
+    final results = <String, dynamic>{};
+
+    try {
+      // Test Firebase Auth
+      final currentUser = auth.currentUser;
+      results['auth_initialized'] = true;
+      results['current_user'] = currentUser?.email ?? 'No user';
+
+      // Test basic auth operation (this doesn't require network)
+      results['auth_available'] = true;
+    } catch (e) {
+      results['auth_initialized'] = false;
+      results['auth_error'] = e.toString();
+    }
+
+    try {
+      // Test Firestore connectivity
+      await _firestoreService.isOnline();
+      results['firestore_online'] = true;
+    } catch (e) {
+      results['firestore_online'] = false;
+      results['firestore_error'] = e.toString();
+    }
+
+    try {
+      // Test offline service
+      await _offlineService.getSyncStatus();
+      results['offline_service'] = true;
+    } catch (e) {
+      results['offline_service'] = false;
+      results['offline_error'] = e.toString();
+    }
+
+    return results;
   }
 }

@@ -44,80 +44,39 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    setState(() => _isLoading = true);
-
-    try {
-      // Show loading message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Initializing Google Sign-In...'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-
-      // Initialize Google Sign-In first
-      final bool initialized = await _authService.initializeGoogleSignIn();
-      if (!initialized) {
-        throw 'Google Sign-In is not available. Please ensure Google Play Services is updated and try again.';
-      }
-
-      // Show sign-in progress
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Starting Google Sign-In...'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-
-      final result = await _authService.signInWithGoogle();
-
-      if (result != null && mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully signed in with Google!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        // Show detailed error message in a dialog for better visibility
+        // Show detailed error in a dialog for better debugging
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text('Google Sign-In Error'),
+              title: const Text('Login Error'),
               content: SingleChildScrollView(
-                child: Text(
-                  e.toString(),
-                  style: const TextStyle(fontSize: 14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('An error occurred during login:'),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        e.toString(),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Please check your email and password, and ensure you have an internet connection.',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
               ),
               actions: [
@@ -125,25 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('OK'),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    _signInWithGoogle(); // Retry
-                  },
-                  child: const Text('Retry'),
-                ),
               ],
             );
           },
-        );
-
-        // Also show a brief snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Google Sign-In failed. Tap for details.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
         );
       }
     } finally {
@@ -152,6 +95,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
+
 
   Future<void> _resetPassword() async {
     if (_emailController.text.trim().isEmpty) {

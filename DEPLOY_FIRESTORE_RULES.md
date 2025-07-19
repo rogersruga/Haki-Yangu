@@ -1,3 +1,19 @@
+# Deploy Firestore Rules
+
+## Manual Deployment Steps
+
+Since Firebase CLI is not configured in this project, you need to manually update the Firestore rules:
+
+### 1. Go to Firebase Console
+1. Open [Firebase Console](https://console.firebase.google.com/)
+2. Select your project: **haki-yangu**
+3. Go to **Firestore Database**
+4. Click on **Rules** tab
+
+### 2. Replace the Current Rules
+Copy and paste the following rules to replace the existing ones:
+
+```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -40,14 +56,14 @@ service cloud.firestore {
 
     // Chat sessions - users can only access their own chats
     match /chats/{chatId} {
-      allow read: if request.auth != null &&
+      allow read: if request.auth != null && 
                   request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null &&
+      allow create: if request.auth != null && 
                    request.auth.uid == request.resource.data.userId;
-      allow update: if request.auth != null &&
+      allow update: if request.auth != null && 
                    request.auth.uid == resource.data.userId &&
                    request.auth.uid == request.resource.data.userId;
-      allow delete: if request.auth != null &&
+      allow delete: if request.auth != null && 
                    request.auth.uid == resource.data.userId;
     }
     
@@ -79,3 +95,51 @@ service cloud.firestore {
     }
   }
 }
+```
+
+### 3. Publish the Rules
+1. Click **Publish** button
+2. Confirm the deployment
+
+## Key Changes Made
+
+### Fixed Chat Permissions
+- **Before**: Used generic `read, write` which didn't work for updates
+- **After**: Separated into specific operations:
+  - `read`: Check user owns the chat
+  - `create`: Check user ID in new document
+  - `update`: Check user owns both existing and updated document
+  - `delete`: Check user owns the document
+
+### Why This Fixes the Permission Error
+The original rules used `allow read, write` which is too generic. The new rules:
+1. **Create**: Works when creating new chat sessions
+2. **Update**: Works when adding messages to existing sessions
+3. **Read**: Works when loading chat history
+4. **Delete**: Works when removing chat sessions
+
+## Testing After Deployment
+
+1. **Deploy the rules** using the steps above
+2. **Restart the app** to clear any cached permissions
+3. **Try sending a message** in the chat
+4. **Check debug console** for:
+   - `🟢 Message saved successfully to Firestore` (success)
+   - No more `permission-denied` errors
+
+## Alternative: Temporary Permissive Rules (For Testing Only)
+
+If you want to test quickly, you can temporarily use these permissive rules (NOT for production):
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+**⚠️ WARNING**: These rules allow any authenticated user to read/write any document. Only use for testing, then revert to the secure rules above.

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/chat_models.dart';
 import 'firestore_service.dart';
@@ -83,23 +84,47 @@ class ChatService {
     List<ChatMessage> conversationHistory,
   ) async {
     try {
-      // Check for quick responses first
-      final quickResponse = _openRouterService.getQuickResponse(userMessage);
+      if (kDebugMode) {
+        print('🔵 ChatService: Processing message for session $sessionId');
+      }
+
+      // Check for quick responses first (only for greetings in new conversations)
+      final quickResponse = _openRouterService.getQuickResponse(userMessage, conversationHistory);
       if (quickResponse != null) {
+        if (kDebugMode) {
+          print('🟡 Using quick response for greeting');
+        }
         final assistantMessage = ChatMessage.assistant(quickResponse);
-        await _saveMessageToSession(sessionId, assistantMessage);
+        // Save quick response in background, don't block on it
+        _saveMessageToSession(sessionId, assistantMessage).catchError((e) {
+          if (kDebugMode) {
+            print('🔴 Failed to save quick response: $e');
+          }
+        });
         return assistantMessage;
       }
 
       // Check if service is available
       final isAvailable = await _openRouterService.isServiceAvailable();
       if (!isAvailable) {
+        if (kDebugMode) {
+          print('🔴 OpenRouter service unavailable');
+        }
         final errorMessage = ChatMessage.assistant(
-          'I\'m currently offline, but I can still help with basic questions. '
-          'Try asking about fundamental rights, voting, or employment rights.',
+          'I\'m currently offline, but I can still help with basic questions about the Constitution. '
+          'Try asking about fundamental rights, voting, employment, or land rights.',
         );
-        await _saveMessageToSession(sessionId, errorMessage);
+        // Save offline message in background
+        _saveMessageToSession(sessionId, errorMessage).catchError((e) {
+          if (kDebugMode) {
+            print('🔴 Failed to save offline message: $e');
+          }
+        });
         return errorMessage;
+      }
+
+      if (kDebugMode) {
+        print('🔵 Sending message to OpenRouter API');
       }
 
       // Get AI response
@@ -111,21 +136,39 @@ class ChatService {
       ChatMessage assistantMessage;
       if (response.success) {
         assistantMessage = ChatMessage.assistant(response.content);
+        if (kDebugMode) {
+          print('🟢 Received successful AI response');
+        }
       } else {
         assistantMessage = ChatMessage.error(response.error ?? 'Unknown error');
+        if (kDebugMode) {
+          print('🔴 AI response error: ${response.error}');
+        }
       }
 
-      // Save to Firestore
-      await _saveMessageToSession(sessionId, assistantMessage);
-      
+      // Save to Firestore in background, don't block the response
+      _saveMessageToSession(sessionId, assistantMessage).catchError((e) {
+        if (kDebugMode) {
+          print('🔴 Failed to save AI response: $e');
+        }
+      });
+
       return assistantMessage;
     } catch (e) {
       if (kDebugMode) {
-        print('Error sending message: $e');
+        print('🔴 Error in sendMessage: $e');
+        print('🔴 Stack trace: ${StackTrace.current}');
       }
-      
-      final errorMessage = ChatMessage.error(e.toString());
-      await _saveMessageToSession(sessionId, errorMessage);
+
+      final errorMessage = ChatMessage.error('Sorry, I encountered an error. Please try again.');
+
+      // Try to save error message, but don't block on it
+      _saveMessageToSession(sessionId, errorMessage).catchError((saveError) {
+        if (kDebugMode) {
+          print('🔴 Failed to save error message: $saveError');
+        }
+      });
+
       return errorMessage;
     }
   }
@@ -133,35 +176,82 @@ class ChatService {
   // Save a message to a chat session
   Future<void> _saveMessageToSession(String sessionId, ChatMessage message) async {
     try {
-      final sessionRef = _chatsCollection.doc(sessionId);
-      
-      await _firestoreService.firestore.runTransaction((transaction) async {
-        final sessionDoc = await transaction.get(sessionRef);
-        
-        if (sessionDoc.exists) {
-          final session = ChatSession.fromFirestore(sessionDoc);
-          final updatedMessages = [...session.messages, message];
-          
-          final updatedSession = session.copyWith(
-            messages: updatedMessages,
-            lastUpdated: DateTime.now(),
-          );
-          
-          transaction.update(sessionRef, updatedSession.toFirestore());
+      if (kDebugMode) {
+        print('🔵 Attempting to save message to session: $sessionId');
+      }
+
+      // Check if user is authenticated
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (kDebugMode) {
+          print('🔴 User not authenticated, cannot save to Firestore');
         }
-      });
+        // Store offline for later sync when user logs in
+        await _offlineService.storePendingOperation(
+          'saveChatMessage',
+          {
+            'sessionId': sessionId,
+            'message': message.toMap(),
+          },
+        );
+        return;
+      }
+
+      final sessionRef = _chatsCollection.doc(sessionId);
+
+      // Use a simpler approach instead of transaction for better reliability
+      final sessionDoc = await sessionRef.get();
+
+      if (sessionDoc.exists) {
+        final session = ChatSession.fromFirestore(sessionDoc);
+        final updatedMessages = [...session.messages, message];
+
+        final updatedSession = session.copyWith(
+          messages: updatedMessages,
+          lastUpdated: DateTime.now(),
+        );
+
+        await sessionRef.update(updatedSession.toFirestore());
+
+        if (kDebugMode) {
+          print('🟢 Message saved successfully to Firestore');
+        }
+      } else {
+        if (kDebugMode) {
+          print('🔴 Session document does not exist: $sessionId');
+        }
+        // Store offline for later sync
+        await _offlineService.storePendingOperation(
+          'saveChatMessage',
+          {
+            'sessionId': sessionId,
+            'message': message.toMap(),
+          },
+        );
+      }
     } catch (e) {
       if (kDebugMode) {
-        print('Error saving message to session: $e');
+        print('🔴 Error saving message to session: $e');
+        print('🔴 Error type: ${e.runtimeType}');
       }
+
       // Store offline for later sync
-      await _offlineService.storePendingOperation(
-        'saveChatMessage',
-        {
-          'sessionId': sessionId,
-          'message': message.toMap(),
-        },
-      );
+      try {
+        await _offlineService.storePendingOperation(
+          'saveChatMessage',
+          {
+            'sessionId': sessionId,
+            'message': message.toMap(),
+          },
+        );
+        if (kDebugMode) {
+          print('🟡 Stored pending operation: saveChatMessage');
+        }
+      } catch (offlineError) {
+        if (kDebugMode) {
+          print('🔴 Failed to store offline operation: $offlineError');
+        }
+      }
     }
   }
 

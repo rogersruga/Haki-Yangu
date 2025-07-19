@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/chat_models.dart';
 import '../services/chat_service.dart';
+import '../services/openrouter_service.dart';
 import '../services/error_handler.dart';
 
 class HakiChatScreen extends StatefulWidget {
@@ -91,11 +93,16 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
     _scrollToBottom();
 
     try {
-      // Get AI response
+      // Get AI response with proper conversation history
+      // Include all non-loading, non-error messages for context
+      final conversationHistory = _messages
+          .where((m) => !m.isLoading && m.error == null)
+          .toList();
+
       final response = await _chatService.sendMessage(
         _currentSession!.id,
         messageText,
-        _messages.where((m) => !m.isLoading).toList(),
+        conversationHistory,
       );
 
       // Remove loading message and add response
@@ -136,7 +143,7 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
 
   void _showSuggestedQuestions() {
     final suggestions = _chatService.getSuggestedQuestions();
-    
+
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -145,12 +152,22 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Suggested Questions',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Suggested Questions',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (kDebugMode)
+                  TextButton(
+                    onPressed: _runDiagnostics,
+                    child: const Text('🔧 Diagnostics'),
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
             ...suggestions.map((question) => ListTile(
@@ -165,6 +182,89 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
         ),
       ),
     );
+  }
+
+  // Debug method to test API and Firestore connectivity
+  Future<void> _runDiagnostics() async {
+    if (!kDebugMode) return;
+
+    Navigator.pop(context); // Close the bottom sheet
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        title: Text('Running Diagnostics...'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Testing API and database connectivity'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Test OpenRouter API with exact documentation format
+      final exactResults = await OpenRouterService().testExactDocumentationFormat();
+
+      // Test regular API connectivity
+      final apiResults = await OpenRouterService().testApiConnectivity();
+
+      // Test Firebase Auth
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Diagnostic Results'),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('🔐 User Auth: ${user != null ? "✅ Logged in as ${user.email}" : "❌ Not logged in"}'),
+                  const SizedBox(height: 8),
+                  Text('🧪 Exact Format Test: ${exactResults['success'] ? "✅" : "❌"} ${exactResults['message']}'),
+                  if (exactResults['error'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text('Exact Error: ${exactResults['error']}', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 8),
+                  Text('🤖 API Status: ${apiResults['success'] ? "✅" : "❌"} ${apiResults['message']}'),
+                  if (apiResults['error'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text('API Error: ${apiResults['error']}', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  ],
+                  const SizedBox(height: 8),
+                  Text('📱 Session: ${_currentSession?.id ?? "No session"}'),
+                  const SizedBox(height: 8),
+                  Text('💬 Messages: ${_messages.length}'),
+                  const SizedBox(height: 8),
+                  Text('🔧 Model: tngtech/deepseek-r1t2-chimera:free'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        _showError('Diagnostics failed: $e');
+      }
+    }
   }
 
   @override

@@ -186,7 +186,7 @@ class OpenRouterRequest {
   final int? maxTokens;
 
   OpenRouterRequest({
-    this.model = "deepseek/deepseek-r1-0528:free",
+    this.model = "tngtech/deepseek-r1t2-chimera:free",
     required this.messages,
     this.extraHeaders,
     this.temperature = 0.7,
@@ -265,6 +265,9 @@ Guidelines:
 7. Encourage users to know and exercise their rights responsibly
 8. Provide practical guidance on how to access services or seek redress
 9. Use examples relevant to Kenyan context when explaining concepts
+10. **IMPORTANT**: Pay close attention to the conversation history and provide follow-up answers that build on previous responses
+11. **CONVERSATION FLOW**: When users ask for more details or specifics about a topic you've already introduced, provide deeper, more detailed information rather than repeating the same general overview
+12. **CONTEXT AWARENESS**: Reference previous parts of the conversation when relevant (e.g., "As I mentioned earlier about land rights..." or "Building on the employment law we discussed...")
 
 Important disclaimers:
 - You provide educational information, not legal advice
@@ -293,12 +296,8 @@ Your goal is to empower Kenyan citizens with knowledge of their rights and civic
   static const Map<String, String> quickResponses = {
     'hello': 'Hello! I\'m Haki, your AI assistant for Kenyan constitutional law and civic education. I can help you understand the Constitution of Kenya 2010, your fundamental rights, and various acts of parliament. What would you like to learn about today?',
     'hi': 'Hi there! I\'m Haki, here to help you understand your constitutional rights and Kenyan laws. How can I assist you today?',
-    'rights': 'The Bill of Rights in Chapter 4 of the Constitution (Articles 19-59) guarantees fundamental rights including life, dignity, freedom, equality, and many others. These rights apply to all persons in Kenya. What specific right would you like to learn about?',
-    'voting': 'Every Kenyan citizen who is 18 years or older has the right to vote (Article 38). The Elections Act governs how elections are conducted by the IEBC. Would you like to know about voter registration, the voting process, or election disputes?',
-    'employment': 'The Employment Act (Cap 226) protects workers\' rights including fair wages, safe working conditions, protection from discrimination, and proper termination procedures. What employment issue can I help you with?',
-    'land': 'The Land Act (No. 6 of 2012) governs land ownership, use, and management in Kenya. It recognizes public, private, and community land. What aspect of land rights would you like to understand?',
-    'gender': 'Article 27 of the Constitution guarantees equality and non-discrimination, including gender equality. The National Gender and Equality Commission Act further protects these rights. What would you like to know about gender equality laws?',
-    'health': 'Article 43 guarantees the right to healthcare, and the Health Act provides the framework for healthcare services. Every person has the right to the highest attainable standard of health. What health-related question do you have?',
-    'constitution': 'The Constitution of Kenya 2010 is our supreme law. It establishes the structure of government, protects fundamental rights, and guides how Kenya is governed. What part of the Constitution would you like to explore?',
+    'good morning': 'Good morning! I\'m Haki, your constitutional law assistant. How can I help you understand your rights and Kenyan laws today?',
+    'good afternoon': 'Good afternoon! I\'m Haki, ready to help you with questions about the Constitution and your rights. What would you like to know?',
+    'good evening': 'Good evening! I\'m Haki, here to assist with constitutional law and civic education. How can I help you tonight?',
   };
 }

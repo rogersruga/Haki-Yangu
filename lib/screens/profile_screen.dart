@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/progress_service.dart';
+import '../services/refresh_service.dart';
 import '../models/user_profile.dart';
 import 'auth_screen.dart';
 
@@ -15,6 +16,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final authService = AuthService();
   final ProgressService _progressService = ProgressService();
+  final RefreshService _refreshService = RefreshService();
   UserProfile? userProfile;
   bool isLoading = true;
   bool isResetting = false;
@@ -23,6 +25,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadUserProfile();
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      // Refresh both user profile and progress data
+      final results = await Future.wait([
+        _refreshService.refreshUserProfile(),
+        _refreshService.refreshProgressData(),
+      ]);
+
+      // Show feedback only if there are errors or warnings
+      for (final result in results) {
+        if (result.showFeedback && mounted) {
+          RefreshService.showRefreshFeedback(context, result);
+          break; // Show only the first feedback message
+        }
+      }
+
+      // Reload user profile if successful
+      if (results[0].isSuccess) {
+        await _loadUserProfile();
+      }
+    } catch (e) {
+      if (mounted) {
+        RefreshService.showRefreshFeedback(
+          context,
+          RefreshResult.error(
+            message: 'Failed to refresh profile data',
+            error: e,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -58,10 +93,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? const Center(
                 child: CircularProgressIndicator(),
               )
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            : RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     // Header Section
                     _buildHeaderSection(userName),
 
@@ -86,9 +124,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildSettingsSection(),
               
               const SizedBox(height: 100), // Space for bottom navigation
-            ],
-          ),
-        ),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }

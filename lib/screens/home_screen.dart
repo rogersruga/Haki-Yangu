@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/progress_service.dart';
+import '../services/refresh_service.dart';
 import '../models/user_profile.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
@@ -18,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final authService = AuthService();
   final ProgressService _progressService = ProgressService();
+  final RefreshService _refreshService = RefreshService();
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +39,42 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    try {
+      // Refresh both user profile and progress data
+      final results = await Future.wait([
+        _refreshService.refreshUserProfile(),
+        _refreshService.refreshProgressData(),
+      ]);
+
+      // Show feedback only if there are errors or warnings
+      for (final result in results) {
+        if (result.showFeedback && mounted) {
+          RefreshService.showRefreshFeedback(context, result);
+          break; // Show only the first feedback message
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        RefreshService.showRefreshFeedback(
+          context,
+          RefreshResult.error(
+            message: 'Failed to refresh data',
+            error: e,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildHomeContent(String userName) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header Section with gradient
           _buildHeaderSection(userName),
 
@@ -66,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildRecentActivitySection(),
 
           const SizedBox(height: 100), // Space for bottom navigation
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/progress_service.dart';
+import '../services/refresh_service.dart';
 import '../models/user_profile.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
@@ -151,6 +152,7 @@ class HomeScreenContent extends StatefulWidget {
 class _HomeScreenContentState extends State<HomeScreenContent> {
   final AuthService _authService = AuthService();
   final ProgressService _progressService = ProgressService();
+  final RefreshService _refreshService = RefreshService();
   UserProfile? userProfile;
   bool isLoading = true;
 
@@ -178,16 +180,52 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
     }
   }
 
+  Future<void> _onRefresh() async {
+    try {
+      // Refresh both user profile and progress data
+      final results = await Future.wait([
+        _refreshService.refreshUserProfile(),
+        _refreshService.refreshProgressData(),
+      ]);
+
+      // Show feedback only if there are errors or warnings
+      for (final result in results) {
+        if (result.showFeedback && mounted) {
+          RefreshService.showRefreshFeedback(context, result);
+          break; // Show only the first feedback message
+        }
+      }
+
+      // Reload user profile if successful
+      if (results[0].isSuccess) {
+        await _loadUserProfile();
+      }
+    } catch (e) {
+      if (mounted) {
+        RefreshService.showRefreshFeedback(
+          context,
+          RefreshResult.error(
+            message: 'Failed to refresh data',
+            error: e,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final userName = user?.displayName ?? user?.email?.split('@')[0] ?? 'User';
     final authService = AuthService();
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header Section with gradient
           _buildHeaderSection(userName, authService, context),
 
@@ -212,7 +250,8 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
           _buildRecentActivitySection(),
 
           const SizedBox(height: 100), // Space for bottom navigation
-        ],
+          ],
+        ),
       ),
     );
   }

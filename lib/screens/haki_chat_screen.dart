@@ -5,6 +5,7 @@ import '../models/chat_models.dart';
 import '../services/chat_service.dart';
 import '../services/openrouter_service.dart';
 import '../services/error_handler.dart';
+import '../services/refresh_service.dart';
 
 class HakiChatScreen extends StatefulWidget {
   final String? sessionId;
@@ -17,6 +18,7 @@ class HakiChatScreen extends StatefulWidget {
 
 class _HakiChatScreenState extends State<HakiChatScreen> {
   final ChatService _chatService = ChatService();
+  final RefreshService _refreshService = RefreshService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -120,6 +122,37 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
       _scrollToBottom();
     } finally {
       setState(() => _isSending = false);
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    try {
+      if (_currentSession != null) {
+        // Refresh chat data
+        final result = await _refreshService.refreshChatData(_currentSession!.id);
+
+        // Show feedback only if there are errors or warnings
+        if (result.showFeedback && mounted) {
+          RefreshService.showRefreshFeedback(context, result);
+        }
+
+        // Reload messages if successful
+        if (result.isSuccess && result.data != null) {
+          setState(() {
+            _messages = List<ChatMessage>.from(result.data);
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        RefreshService.showRefreshFeedback(
+          context,
+          RefreshResult.error(
+            message: 'Failed to refresh chat history',
+            error: e,
+          ),
+        );
+      }
     }
   }
 
@@ -324,13 +357,17 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
                 Expanded(
                   child: _messages.isEmpty
                       ? _buildEmptyState()
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            return _buildMessageBubble(_messages[index]);
-                          },
+                      : RefreshIndicator(
+                          onRefresh: _onRefresh,
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
+                              return _buildMessageBubble(_messages[index]);
+                            },
+                          ),
                         ),
                 ),
                 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/refresh_service.dart';
 import 'land_rights_detail_screen.dart';
 import 'employment_law_detail_screen.dart';
 import 'gender_equality_detail_screen.dart';
@@ -16,6 +17,7 @@ class LearnScreen extends StatefulWidget {
 enum SortOrder { none, aToZ, zToA }
 
 class _LearnScreenState extends State<LearnScreen> {
+  final RefreshService _refreshService = RefreshService();
   final TextEditingController _searchController = TextEditingController();
   SortOrder _currentSortOrder = SortOrder.none;
   
@@ -431,21 +433,47 @@ class _LearnScreenState extends State<LearnScreen> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    try {
+      // Refresh learning content
+      final result = await _refreshService.refreshLearningContent();
+
+      // Show feedback only if there are errors or warnings
+      if (result.showFeedback && mounted) {
+        RefreshService.showRefreshFeedback(context, result);
+      }
+    } catch (e) {
+      if (mounted) {
+        RefreshService.showRefreshFeedback(
+          context,
+          RefreshResult.error(
+            message: 'Failed to refresh learning content',
+            error: e,
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildCategoriesGrid() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.1,
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: GridView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 1.1,
+          ),
+          itemCount: _filteredCategories.length,
+          itemBuilder: (context, index) {
+            final category = _filteredCategories[index];
+            return _buildCategoryCard(category);
+          },
         ),
-        itemCount: _filteredCategories.length,
-        itemBuilder: (context, index) {
-          final category = _filteredCategories[index];
-          return _buildCategoryCard(category);
-        },
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/module_completion_button.dart';
 import '../services/progress_service.dart';
+import '../services/refresh_service.dart';
 
 class ElectionsActDetailScreen extends StatefulWidget {
   const ElectionsActDetailScreen({super.key});
@@ -10,7 +11,30 @@ class ElectionsActDetailScreen extends StatefulWidget {
 }
 
 class _ElectionsActDetailScreenState extends State<ElectionsActDetailScreen> {
+  final RefreshService _refreshService = RefreshService();
   bool isBookmarked = false;
+
+  Future<void> _onRefresh() async {
+    try {
+      // Refresh module completion status
+      final result = await _refreshService.refreshModuleStatus(ProgressService.electionsAct);
+
+      // Show feedback only if there are errors or warnings
+      if (result.showFeedback && mounted) {
+        RefreshService.showRefreshFeedback(context, result);
+      }
+    } catch (e) {
+      if (mounted) {
+        RefreshService.showRefreshFeedback(
+          context,
+          RefreshResult.error(
+            message: 'Failed to refresh module status',
+            error: e,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +48,14 @@ class _ElectionsActDetailScreenState extends State<ElectionsActDetailScreen> {
             
             // Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: RefreshIndicator(
+                onRefresh: _onRefresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     // Title Section
                     _buildTitleSection(),
                     
@@ -111,7 +138,8 @@ class _ElectionsActDetailScreenState extends State<ElectionsActDetailScreen> {
                     ),
 
                     const SizedBox(height: 32), // Space after completion button
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

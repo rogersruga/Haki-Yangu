@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../services/progress_service.dart';
+import '../models/user_profile.dart';
 import 'celebration_overlay.dart';
 
 class ModuleCompletionButton extends StatefulWidget {
@@ -25,6 +27,7 @@ class _ModuleCompletionButtonState extends State<ModuleCompletionButton>
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  StreamSubscription<UserProgress?>? _progressSubscription;
 
   @override
   void initState() {
@@ -41,12 +44,27 @@ class _ModuleCompletionButtonState extends State<ModuleCompletionButton>
       curve: Curves.easeInOut,
     ));
     _checkCompletionStatus();
+    _setupProgressListener();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _progressSubscription?.cancel();
     super.dispose();
+  }
+
+  void _setupProgressListener() {
+    _progressSubscription = _progressService.getUserProgressStream().listen((progress) {
+      if (mounted) {
+        final isCompleted = progress?.completedLessons.contains(widget.moduleId) ?? false;
+        if (_isCompleted != isCompleted) {
+          setState(() {
+            _isCompleted = isCompleted;
+          });
+        }
+      }
+    });
   }
 
   Future<void> _checkCompletionStatus() async {

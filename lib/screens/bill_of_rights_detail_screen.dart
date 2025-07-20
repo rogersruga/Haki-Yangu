@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_completion_button.dart';
+import '../services/progress_service.dart';
 
 class BillOfRightsDetailScreen extends StatefulWidget {
   const BillOfRightsDetailScreen({super.key});
@@ -19,7 +21,7 @@ class _BillOfRightsDetailScreenState extends State<BillOfRightsDetailScreen> {
           children: [
             // Header Section
             _buildHeader(),
-            
+
             // Content
             Expanded(
               child: SingleChildScrollView(
@@ -95,10 +97,16 @@ class _BillOfRightsDetailScreenState extends State<BillOfRightsDetailScreen> {
                     // Important Notice Section
                     _buildImportantNotice(),
                     
-                    const SizedBox(height: 100), // Space for bottom navigation
+                    const SizedBox(height: 24), // Space for completion button
                   ],
                 ),
               ),
+            ),
+
+            // Completion Button
+            ModuleCompletionButton(
+              moduleId: ProgressService.billOfRights,
+              moduleName: 'Bill of Rights',
             ),
           ],
         ),

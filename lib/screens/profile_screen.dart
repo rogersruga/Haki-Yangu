@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../services/progress_service.dart';
 import '../models/user_profile.dart';
 import 'auth_screen.dart';
 
@@ -13,6 +14,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final authService = AuthService();
+  final ProgressService _progressService = ProgressService();
   UserProfile? userProfile;
   bool isLoading = true;
 
@@ -64,8 +66,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Stats/Progress Overview
-                    _buildStatsSection(),
+                    // Stats/Progress Overview with real-time updates
+                    StreamBuilder<UserProgress?>(
+                      stream: _progressService.getUserProgressStream(),
+                      builder: (context, snapshot) {
+                        return _buildStatsSection(snapshot.data);
+                      },
+                    ),
               
               const SizedBox(height: 24),
               
@@ -242,7 +249,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(UserProgress? progress) {
+    // Calculate module completion stats
+    final completedModules = progress?.completedLessons
+        .where((lesson) => ProgressService.allModules.contains(lesson))
+        .length ?? 0;
+    final totalModules = ProgressService.allModules.length;
+    final progressPercentage = totalModules > 0 ? completedModules / totalModules : 0.0;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
@@ -313,7 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   children: [
                     Text(
-                      '${userProfile?.progress.totalLessonsCompleted ?? 0} of 20 lessons completed',
+                      '$completedModules of $totalModules modules completed',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -329,7 +342,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: FractionallySizedBox(
                         alignment: Alignment.centerLeft,
-                        widthFactor: ((userProfile?.progress.totalLessonsCompleted ?? 0) / 20).clamp(0.0, 1.0),
+                        widthFactor: progressPercentage.clamp(0.0, 1.0),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,

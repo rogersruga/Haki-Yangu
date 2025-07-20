@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../services/progress_service.dart';
+import '../models/user_profile.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 import 'haki_chat_screen.dart';
@@ -15,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   final authService = AuthService();
+  final ProgressService _progressService = ProgressService();
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +47,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 24),
 
-          // User Stats Overview
-          _buildStatsSection(),
+          // User Stats Overview with real-time progress
+          StreamBuilder<UserProgress?>(
+            stream: _progressService.getUserProgressStream(),
+            builder: (context, snapshot) {
+              return _buildStatsSection(snapshot.data);
+            },
+          ),
 
           const SizedBox(height: 24),
 
@@ -236,15 +244,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(UserProgress? progress) {
+    // Calculate module completion stats
+    final completedModules = progress?.completedLessons
+        .where((lesson) => ProgressService.allModules.contains(lesson))
+        .length ?? 0;
+    final totalModules = ProgressService.allModules.length;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Row(
         children: [
           Expanded(
             child: _buildStatCard(
-              title: 'Completed',
-              value: '0', // TODO: Get from user data
+              title: 'Modules',
+              value: '$completedModules/$totalModules',
               icon: Icons.school,
               color: Colors.blue,
             ),
@@ -253,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _buildStatCard(
               title: 'Quiz Score',
-              value: '0%', // TODO: Get from user data
+              value: '${progress?.averageQuizScore.toInt() ?? 0}%',
               icon: Icons.quiz,
               color: Colors.green,
             ),
@@ -262,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _buildStatCard(
               title: 'Streak Days',
-              value: '0', // TODO: Get from user data
+              value: '${progress?.currentStreak ?? 0}',
               icon: Icons.local_fire_department,
               color: Colors.orange,
             ),

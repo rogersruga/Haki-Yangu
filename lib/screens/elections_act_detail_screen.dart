@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/module_completion_button.dart';
+import '../services/progress_service.dart';
 
 class ElectionsActDetailScreen extends StatefulWidget {
   const ElectionsActDetailScreen({super.key});
@@ -100,10 +102,16 @@ class _ElectionsActDetailScreenState extends State<ElectionsActDetailScreen> {
                     // Important Notice Section
                     _buildImportantNotice(),
                     
-                    const SizedBox(height: 100), // Space for bottom navigation
+                    const SizedBox(height: 24), // Space for completion button
                   ],
                 ),
               ),
+            ),
+
+            // Completion Button
+            ModuleCompletionButton(
+              moduleId: ProgressService.electionsAct,
+              moduleName: 'Elections Act',
             ),
           ],
         ),

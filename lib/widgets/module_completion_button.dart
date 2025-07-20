@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/progress_service.dart';
+import 'celebration_overlay.dart';
 
 class ModuleCompletionButton extends StatefulWidget {
   final String moduleId;
@@ -68,9 +69,34 @@ class _ModuleCompletionButtonState extends State<ModuleCompletionButton>
     await _animationController.forward();
     await _animationController.reverse();
 
+    // Show celebration animation first
+    if (mounted) {
+      await _showCelebrationAnimation();
+    }
+  }
+
+  Future<void> _showCelebrationAnimation() async {
+    // Show celebration overlay
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.transparent,
+      builder: (context) => CelebrationOverlay(
+        moduleName: widget.moduleName,
+        onComplete: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+
+    // After celebration, proceed with actual completion logic
+    await _performCompletion();
+  }
+
+  Future<void> _performCompletion() async {
     try {
       final success = await _progressService.markModuleCompleted(widget.moduleId);
-      
+
       if (success && mounted) {
         setState(() {
           _isCompleted = true;
@@ -152,25 +178,13 @@ class _ModuleCompletionButtonState extends State<ModuleCompletionButton>
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: ElevatedButton.icon(
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: ElevatedButton.icon(
                 onPressed: _isCompleted ? null : _markAsCompleted,
                 icon: _isLoading
                     ? SizedBox(
@@ -214,7 +228,6 @@ class _ModuleCompletionButtonState extends State<ModuleCompletionButton>
             );
           },
         ),
-      ),
     );
   }
 }

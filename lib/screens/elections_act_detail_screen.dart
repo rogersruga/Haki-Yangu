@@ -101,17 +101,19 @@ class _ElectionsActDetailScreenState extends State<ElectionsActDetailScreen> {
                     
                     // Important Notice Section
                     _buildImportantNotice(),
-                    
-                    const SizedBox(height: 24), // Space for completion button
+
+                    const SizedBox(height: 32),
+
+                    // Completion Button (inline)
+                    ModuleCompletionButton(
+                      moduleId: ProgressService.electionsAct,
+                      moduleName: 'Elections Act',
+                    ),
+
+                    const SizedBox(height: 32), // Space after completion button
                   ],
                 ),
               ),
-            ),
-
-            // Completion Button
-            ModuleCompletionButton(
-              moduleId: ProgressService.electionsAct,
-              moduleName: 'Elections Act',
             ),
           ],
         ),

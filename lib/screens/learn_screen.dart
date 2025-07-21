@@ -27,7 +27,7 @@ class _LearnScreenState extends State<LearnScreen> {
       title: 'Land Rights',
       subtitle: 'property & ownership',
       icon: Icons.home,
-      color: const Color(0xFF7B1FA2), // Purple
+      color: const Color(0xFF1B5E20), // Deep green
     ),
     LegalCategory(
       title: 'Employment Law',
@@ -186,13 +186,13 @@ class _LearnScreenState extends State<LearnScreen> {
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFF7B1FA2).withValues(alpha: 0.1)
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
               : Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
-          color: isSelected ? const Color(0xFF7B1FA2) : Colors.grey[600],
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[600],
           size: 20,
         ),
       ),
@@ -200,7 +200,7 @@ class _LearnScreenState extends State<LearnScreen> {
         title,
         style: TextStyle(
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          color: isSelected ? const Color(0xFF7B1FA2) : Colors.grey[800],
+          color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[800],
         ),
       ),
       subtitle: Text(
@@ -211,9 +211,9 @@ class _LearnScreenState extends State<LearnScreen> {
         ),
       ),
       trailing: isSelected
-          ? const Icon(
+          ? Icon(
               Icons.check_circle,
-              color: Color(0xFF7B1FA2),
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             )
           : null,
@@ -271,15 +271,8 @@ class _LearnScreenState extends State<LearnScreen> {
   Widget _buildTopNavigationBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF7B1FA2), // Purple
-            Color(0xFF9C27B0), // Violet
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -401,9 +394,9 @@ class _LearnScreenState extends State<LearnScreen> {
                 ),
                 child: IconButton(
                   onPressed: _showFilterOptions,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.tune,
-                    color: Color(0xFF7B1FA2),
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ),

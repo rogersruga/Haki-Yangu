@@ -137,16 +137,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF7B1FA2), // Purple
-            Color(0xFF9C27B0), // Violet
-            Color(0xFFBA68C8), // Light purple
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
@@ -227,18 +219,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             height: 100,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.person,
                                 size: 50,
-                                color: Color(0xFF7B1FA2),
+                                color: Theme.of(context).colorScheme.primary,
                               );
                             },
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.person,
                           size: 50,
-                          color: Color(0xFF7B1FA2),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                 ),
                 Positioned(
@@ -247,8 +239,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Container(
                     width: 32,
                     height: 32,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF7B1FA2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -319,10 +311,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SnackBar(content: Text('View all milestones coming soon!')),
                   );
                 },
-                child: const Text(
+                child: Text(
                   'VIEW ALL',
                   style: TextStyle(
-                    color: Color(0xFF7B1FA2),
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -337,9 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF7B1FA2), Color(0xFF9C27B0)],
-              ),
+              color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -455,7 +445,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Icon(
             icon,
-            color: const Color(0xFF7B1FA2),
+            color: Theme.of(context).colorScheme.primary,
             size: 24,
           ),
           const SizedBox(height: 8),
@@ -505,10 +495,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SnackBar(content: Text('View all badges coming soon!')),
                   );
                 },
-                child: const Text(
+                child: Text(
                   'VIEW ALL',
                   style: TextStyle(
-                    color: Color(0xFF7B1FA2),
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -529,7 +519,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildBadgeItem(Icons.star, Colors.orange, false),
               _buildBadgeItem(Icons.chat_bubble, Colors.blue, false),
               _buildBadgeItem(Icons.shopping_cart, Colors.green, false),
-              _buildBadgeItem(Icons.chat, const Color(0xFF7B1FA2), false),
+              _buildBadgeItem(Icons.chat, Theme.of(context).colorScheme.primary, false),
               _buildBadgeItem(Icons.favorite, Colors.red, false),
               _buildBadgeItem(Icons.send, Colors.blue, false),
             ],
@@ -546,7 +536,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B1FA2),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -653,12 +643,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: const Color(0xFF7B1FA2).withValues(alpha: 0.1),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: const Color(0xFF7B1FA2),
+            color: Theme.of(context).colorScheme.primary,
             size: 24,
           ),
         ),
@@ -684,8 +674,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Container(
                 width: 20,
                 height: 20,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF7B1FA2),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

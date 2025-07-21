@@ -109,16 +109,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF7B1FA2), // Purple
-            Color(0xFF9C27B0), // Violet
-            Color(0xFFBA68C8), // Light purple
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
@@ -142,9 +134,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.balance,
-                        color: Color(0xFF7B1FA2),
+                        color: Theme.of(context).colorScheme.primary,
                         size: 24,
                       ),
                     ),
@@ -232,18 +224,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             height: 60,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
+                              return Icon(
                                 Icons.person,
                                 size: 30,
-                                color: Color(0xFF7B1FA2),
+                                color: Theme.of(context).colorScheme.primary,
                               );
                             },
                           ),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.person,
                           size: 30,
-                          color: Color(0xFF7B1FA2),
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                 ),
                 const SizedBox(width: 16),
@@ -291,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Expanded(
             child: _buildStatCard(
-              title: 'Modules',
+              title: 'Modules Done',
               value: '$completedModules/$totalModules',
               icon: Icons.school,
               color: Colors.blue,
@@ -387,9 +379,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 16),
           _buildFeatureCard(
             title: 'Justice Simplified',
-            subtitle: 'Learn rights in simple language',
+            subtitle: 'Learn rights in a simplified way',
             icon: Icons.menu_book,
-            color: const Color(0xFF7B1FA2), // Purple
+            color: const Color(0xFF7B1FA2), // Purple accent
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Justice Simplified coming soon!')),
@@ -398,8 +390,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
           _buildFeatureCard(
-            title: 'Know Your Rights',
-            subtitle: 'Civic quiz section',
+            title: 'Test Your Knowledge',
+            subtitle: 'Take a Civic quiz',
             icon: Icons.quiz,
             color: const Color(0xFF388E3C), // Green
             onTap: () {
@@ -634,13 +626,29 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Instagram/Twitter-style navigation icon builder
+  Widget _buildNavIcon(IconData icon, int index) {
+    final bool isSelected = _selectedIndex == index;
+
+    return Container(
+      padding: const EdgeInsets.all(2.0),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: isSelected ? 28.0 : 24.0,
+        // Use thicker stroke for selected items
+        weight: isSelected ? 700 : 400,
+      ),
+    );
+  }
+
   Widget _buildBottomNavigationBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.primary,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, -2),
@@ -655,9 +663,9 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF7B1FA2),
-        unselectedItemColor: Colors.grey[600],
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white.withValues(alpha: 0.7),
         selectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 12,
@@ -666,21 +674,21 @@ class _HomeScreenState extends State<HomeScreen> {
           fontWeight: FontWeight.w500,
           fontSize: 12,
         ),
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: _buildNavIcon(Icons.home, 0),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.school),
+            icon: _buildNavIcon(Icons.school, 1),
             label: 'Learn',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.quiz),
+            icon: _buildNavIcon(Icons.quiz, 2),
             label: 'Quiz',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: _buildNavIcon(Icons.person, 3),
             label: 'Profile',
           ),
         ],

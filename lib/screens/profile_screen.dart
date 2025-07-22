@@ -139,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
         ),

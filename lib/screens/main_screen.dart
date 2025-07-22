@@ -37,29 +37,13 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // Instagram/Twitter-style navigation icon builder
-  Widget _buildNavIcon(IconData icon, int index) {
-    final bool isSelected = _selectedIndex == index;
-
-    return Container(
-      padding: const EdgeInsets.all(2.0),
-      child: Icon(
-        icon,
-        color: Colors.white,
-        size: isSelected ? 28.0 : 24.0,
-        // Use thicker stroke for selected items
-        weight: isSelected ? 700 : 400,
-      ),
-    );
-  }
-
   Widget _buildBottomNavigationBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.grey.withValues(alpha: 0.2),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, -2),
@@ -85,21 +69,21 @@ class _MainScreenState extends State<MainScreen> {
           fontWeight: FontWeight.w500,
           fontSize: 12,
         ),
-        items: [
+        items: const [
           BottomNavigationBarItem(
-            icon: _buildNavIcon(Icons.home, 0),
+            icon: Icon(Icons.home),
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: _buildNavIcon(Icons.school, 1),
+            icon: Icon(Icons.school),
             label: 'Learn',
           ),
           BottomNavigationBarItem(
-            icon: _buildNavIcon(Icons.quiz, 2),
+            icon: Icon(Icons.quiz),
             label: 'Quiz',
           ),
           BottomNavigationBarItem(
-            icon: _buildNavIcon(Icons.person, 3),
+            icon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
@@ -279,7 +263,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
         ),
@@ -548,7 +532,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             title: 'Justice Simplified',
             subtitle: 'Learn rights in a simplified way',
             icon: Icons.menu_book,
-            color: const Color(0xFF7B1FA2), // Purple accent
+            color: const Color(0xFF7B1FA2),
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Justice Simplified coming soon!')),

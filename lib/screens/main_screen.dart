@@ -374,6 +374,10 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                             width: 60,
                             height: 60,
                             fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const CircularProgressIndicator(strokeWidth: 2);
+                            },
                             errorBuilder: (context, error, stackTrace) {
                               return Icon(
                                 Icons.person,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
+import '../services/profile_service.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
 import '../models/user_profile.dart';
@@ -15,16 +17,333 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final authService = AuthService();
+  final ProfileService _profileService = ProfileService();
   final ProgressService _progressService = ProgressService();
   final RefreshService _refreshService = RefreshService();
   UserProfile? userProfile;
   bool isLoading = true;
   bool isResetting = false;
+  bool isUpdatingProfile = false;
+  bool isUploadingImage = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserProfile();
+  }
+
+  // Profile management methods
+  Future<void> _updateProfilePicture() async {
+    try {
+      final ImageSource? source = await _profileService.showImageSourceDialog(context);
+      if (source == null) return;
+
+      setState(() {
+        isUploadingImage = true;
+      });
+
+      final XFile? image = await _profileService.pickImage(source: source);
+      if (image == null) {
+        setState(() {
+          isUploadingImage = false;
+        });
+        return;
+      }
+
+      final success = await _profileService.updateProfilePicture(image);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture updated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Reload user data to show updated picture
+        await _loadUserProfile();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating profile picture: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isUploadingImage = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _updateDisplayName() async {
+    final TextEditingController controller = TextEditingController();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user?.displayName != null) {
+      controller.text = user!.displayName!;
+    }
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Update Display Name'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: 'Display Name',
+              hintText: 'Enter your new display name',
+            ),
+            maxLength: 50,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final newName = controller.text.trim();
+                if (newName.isNotEmpty) {
+                  Navigator.of(context).pop(newName);
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        setState(() {
+          isUpdatingProfile = true;
+        });
+
+        final success = await _profileService.updateDisplayName(result);
+
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Display name updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          await _loadUserProfile();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating display name: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            isUpdatingProfile = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _updatePassword() async {
+    final TextEditingController currentPasswordController = TextEditingController();
+    final TextEditingController newPasswordController = TextEditingController();
+    final TextEditingController confirmPasswordController = TextEditingController();
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Change Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: currentPasswordController,
+                decoration: const InputDecoration(
+                  labelText: 'Current Password',
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: newPasswordController,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                ),
+                obscureText: true,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: confirmPasswordController,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm New Password',
+                ),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final currentPassword = currentPasswordController.text;
+                final newPassword = newPasswordController.text;
+                final confirmPassword = confirmPasswordController.text;
+
+                if (currentPassword.isNotEmpty &&
+                    newPassword.isNotEmpty &&
+                    newPassword == confirmPassword &&
+                    newPassword.length >= 6) {
+                  Navigator.of(context).pop({
+                    'current': currentPassword,
+                    'new': newPassword,
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please check your password requirements'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null) {
+      try {
+        setState(() {
+          isUpdatingProfile = true;
+        });
+
+        final success = await _profileService.updatePassword(
+          result['current']!,
+          result['new']!,
+        );
+
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Password updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error updating password: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            isUpdatingProfile = false;
+          });
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    final TextEditingController passwordController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'This action cannot be undone. All your data will be permanently deleted.',
+                style: TextStyle(color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(
+                  labelText: 'Enter your password to confirm',
+                ),
+                obscureText: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (passwordController.text.isNotEmpty) {
+                  Navigator.of(context).pop(true);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete Account'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        setState(() {
+          isUpdatingProfile = true;
+        });
+
+        final success = await _profileService.deleteAccount(passwordController.text);
+
+        if (success && mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const AuthScreen()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting account: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            isUpdatingProfile = false;
+          });
+        }
+      }
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -211,42 +530,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.white,
-                  child: user?.photoURL != null
-                      ? ClipOval(
-                          child: Image.network(
-                            user!.photoURL!,
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.person,
-                                size: 50,
-                                color: Theme.of(context).colorScheme.primary,
-                              );
-                            },
-                          ),
-                        )
-                      : Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                  child: isUploadingImage
+                      ? const CircularProgressIndicator()
+                      : user?.photoURL != null
+                          ? ClipOval(
+                              child: Image.network(
+                                user!.photoURL!,
+                                width: 100,
+                                height: 100,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const CircularProgressIndicator();
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  );
+                                },
+                              ),
+                            )
+                          : Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                 ),
                 Positioned(
                   bottom: 0,
                   right: 0,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 16,
+                  child: GestureDetector(
+                    onTap: isUploadingImage ? null : _updateProfilePicture,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -585,16 +913,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
+          // Profile Management Section
           _buildSettingsItem(
-            icon: Icons.person_outline,
-            title: 'My Profile',
-            subtitle: 'Edit the personal information',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit profile coming soon!')),
-              );
-            },
+            icon: Icons.edit,
+            title: 'Edit Display Name',
+            subtitle: 'Update your display name',
+            onTap: isUpdatingProfile ? null : () => _updateDisplayName(),
           ),
+          _buildSettingsItem(
+            icon: Icons.lock_outline,
+            title: 'Change Password',
+            subtitle: 'Update your account password',
+            onTap: isUpdatingProfile ? null : () => _updatePassword(),
+          ),
+          _buildSettingsItem(
+            icon: Icons.photo_camera,
+            title: 'Profile Picture',
+            subtitle: 'Update your profile picture',
+            onTap: isUploadingImage ? null : () => _updateProfilePicture(),
+          ),
+
+          // Divider
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Divider(),
+          ),
+
+          // App Features Section
           _buildSettingsItem(
             icon: Icons.trending_up,
             title: 'Show Progress',
@@ -624,6 +969,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             hasWarning: true,
           ),
+
+          // Divider
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Divider(),
+          ),
+
+          // Danger Zone
+          _buildSettingsItem(
+            icon: Icons.delete_forever,
+            title: 'Delete Account',
+            subtitle: 'Permanently delete your account',
+            onTap: isUpdatingProfile ? null : () => _deleteAccount(),
+            hasWarning: true,
+          ),
         ],
       ),
     );
@@ -633,7 +993,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     bool hasWarning = false,
   }) {
     return Container(

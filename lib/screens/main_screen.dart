@@ -9,6 +9,7 @@ import '../widgets/robust_profile_image.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 import 'learn_screen.dart';
+import 'quiz_screen.dart';
 import 'haki_chat_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreenContent(),
     const LearnScreen(),
-    const PlaceholderScreen(title: 'Quiz', subtitle: 'Interactive quizzes coming soon', icon: Icons.quiz),
+    const QuizScreen(),
     const ProfileScreen(),
   ];
 

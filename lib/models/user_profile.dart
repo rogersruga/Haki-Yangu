@@ -164,6 +164,9 @@ class QuizResult {
   final DateTime completedAt;
   final Duration timeSpent;
   final List<int> incorrectQuestions;
+  final String? moduleId;
+  final String? quizId;
+  final bool passed;
 
   QuizResult({
     required this.score,
@@ -171,9 +174,20 @@ class QuizResult {
     required this.completedAt,
     required this.timeSpent,
     this.incorrectQuestions = const [],
+    this.moduleId,
+    this.quizId,
+    this.passed = false,
   });
 
   double get percentage => (score / totalQuestions) * 100;
+
+  String get performanceMessage {
+    if (percentage >= 80) return 'Excellent!';
+    if (percentage >= 60) return 'Good job!';
+    return 'Keep practicing!';
+  }
+
+  String get scoreText => '$score out of $totalQuestions correct';
 
   factory QuizResult.fromMap(Map<String, dynamic> map) {
     return QuizResult(
@@ -182,6 +196,9 @@ class QuizResult {
       completedAt: (map['completedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       timeSpent: Duration(seconds: map['timeSpentSeconds'] ?? 0),
       incorrectQuestions: List<int>.from(map['incorrectQuestions'] ?? []),
+      moduleId: map['moduleId'],
+      quizId: map['quizId'],
+      passed: map['passed'] ?? false,
     );
   }
 
@@ -192,6 +209,9 @@ class QuizResult {
       'completedAt': Timestamp.fromDate(completedAt),
       'timeSpentSeconds': timeSpent.inSeconds,
       'incorrectQuestions': incorrectQuestions,
+      'moduleId': moduleId,
+      'quizId': quizId,
+      'passed': passed,
     };
   }
 }

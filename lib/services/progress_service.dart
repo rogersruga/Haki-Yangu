@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
+import '../models/quiz.dart';
 import 'firestore_service.dart';
 
 class ProgressService {
@@ -248,6 +249,78 @@ class ProgressService {
         print('Error resetting progress: $e');
       }
       return false;
+    }
+  }
+
+  // Get quiz statistics for display
+  Future<Map<String, dynamic>> getQuizStats() async {
+    try {
+      final progress = await getUserProgress();
+      if (progress == null) {
+        return {
+          'totalQuizzesTaken': 0,
+          'averageScore': 0.0,
+          'bestScore': 0.0,
+          'quizzesCompleted': 0,
+        };
+      }
+
+      final quizResults = progress.quizResults.values.toList();
+      if (quizResults.isEmpty) {
+        return {
+          'totalQuizzesTaken': 0,
+          'averageScore': 0.0,
+          'bestScore': 0.0,
+          'quizzesCompleted': 0,
+        };
+      }
+
+      final scores = quizResults.map((r) => r.percentage).toList();
+      final averageScore = scores.reduce((a, b) => a + b) / scores.length;
+      final bestScore = scores.reduce((a, b) => a > b ? a : b);
+
+      return {
+        'totalQuizzesTaken': progress.totalQuizzesCompleted,
+        'averageScore': averageScore,
+        'bestScore': bestScore,
+        'quizzesCompleted': progress.completedQuizzes.length,
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting quiz stats: $e');
+      }
+      return {
+        'totalQuizzesTaken': 0,
+        'averageScore': 0.0,
+        'bestScore': 0.0,
+        'quizzesCompleted': 0,
+      };
+    }
+  }
+
+  // Get combined learning and quiz statistics
+  Future<Map<String, dynamic>> getCombinedStats() async {
+    try {
+      final completionStats = await getCompletionStats();
+      final quizStats = await getQuizStats();
+
+      return {
+        ...completionStats,
+        ...quizStats,
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error getting combined stats: $e');
+      }
+      return {
+        'totalModules': allModules.length,
+        'completedModules': 0,
+        'completionPercentage': 0.0,
+        'totalQuizzesTaken': 0,
+        'averageScore': 0.0,
+        'bestScore': 0.0,
+        'quizzesCompleted': 0,
+      };
     }
   }
 }

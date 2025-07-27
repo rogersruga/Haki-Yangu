@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
@@ -6,6 +7,7 @@ import '../services/profile_service.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
 import '../models/user_profile.dart';
+import '../widgets/robust_profile_image.dart';
 import 'auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -21,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ProgressService _progressService = ProgressService();
   final RefreshService _refreshService = RefreshService();
   UserProfile? userProfile;
+  User? currentUser; // Add this to track user state
   bool isLoading = true;
   bool isResetting = false;
   bool isUpdatingProfile = false;
@@ -35,24 +38,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Profile management methods
   Future<void> _updateProfilePicture() async {
     try {
+      if (kDebugMode) {
+        print('🔵 Profile picture update started...');
+      }
+
       final ImageSource? source = await _profileService.showImageSourceDialog(context);
-      if (source == null) return;
+      if (source == null) {
+        if (kDebugMode) {
+          print('🔵 User cancelled image source selection');
+        }
+        return;
+      }
 
       setState(() {
         isUploadingImage = true;
       });
 
+      if (kDebugMode) {
+        print('🔵 Picking image from $source...');
+      }
+
       final XFile? image = await _profileService.pickImage(source: source);
       if (image == null) {
+        if (kDebugMode) {
+          print('🔵 No image selected');
+        }
         setState(() {
           isUploadingImage = false;
         });
         return;
       }
 
-      final success = await _profileService.updateProfilePicture(image);
+      if (kDebugMode) {
+        print('🔵 Image selected: ${image.path}');
+        print('🔵 Starting profile picture update...');
+      }
+
+      // Add timeout to the entire update process to prevent infinite hanging
+      final success = await _profileService.updateProfilePicture(image).timeout(
+        const Duration(minutes: 1), // Total timeout for the entire process
+        onTimeout: () {
+          if (kDebugMode) {
+            print('❌ Profile picture update timed out after 1 minute');
+          }
+          throw Exception('Upload timed out. Please check your internet connection and try again.');
+        },
+      );
 
       if (success && mounted) {
+        if (kDebugMode) {
+          print('✅ Profile picture update completed successfully');
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Profile picture updated successfully!'),
@@ -63,11 +99,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await _loadUserProfile();
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('❌ Profile picture update failed: $e');
+      }
       if (mounted) {
+        String errorMessage = 'Error updating profile picture';
+
+        // Provide user-friendly error messages
+        if (e.toString().contains('timeout') || e.toString().contains('timed out')) {
+          errorMessage = 'Upload timed out. Please check your internet connection and try again.';
+        } else if (e.toString().contains('storage/unauthorized')) {
+          errorMessage = 'Permission denied. Please contact support.';
+        } else if (e.toString().contains('network')) {
+          errorMessage = 'Network error. Please check your internet connection.';
+        } else if (e.toString().contains('decode')) {
+          errorMessage = 'Invalid image format. Please try a different image.';
+        } else if (e.toString().contains('compression')) {
+          errorMessage = 'Image processing failed. Please try a smaller image.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating profile picture: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -76,6 +131,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           isUploadingImage = false;
         });
+        if (kDebugMode) {
+          print('🔵 Profile picture update process completed (finally block)');
+        }
       }
     }
   }
@@ -381,14 +439,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserProfile() async {
     try {
+      if (kDebugMode) {
+        print('🔵 PROFILE: Loading user profile...');
+      }
+
+      // Get fresh user data from Firebase Auth
+      final user = FirebaseAuth.instance.currentUser;
+      await user?.reload(); // Force refresh from server
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+
+      if (kDebugMode) {
+        print('🔵 PROFILE: Current user photoURL: ${refreshedUser?.photoURL}');
+      }
+
+      // Get profile from Firestore
       final profile = await authService.getUserProfile();
+
       if (mounted) {
         setState(() {
+          currentUser = refreshedUser; // Update the user state
           userProfile = profile;
           isLoading = false;
         });
+
+        if (kDebugMode) {
+          print('🔵 PROFILE: UI updated with new user data');
+          print('🔵 PROFILE: Profile photoURL: ${profile?.photoURL}');
+          print('🔵 PROFILE: Auth photoURL: ${refreshedUser?.photoURL}');
+        }
       }
     } catch (e) {
+      if (kDebugMode) {
+        print('❌ PROFILE: Error loading profile: $e');
+      }
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -397,13 +480,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+
+
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    // Use the tracked user state instead of direct Firebase call
+    final user = currentUser ?? FirebaseAuth.instance.currentUser;
     final userName = userProfile?.displayName ??
                      user?.displayName ??
                      user?.email?.split('@')[0] ??
                      'User';
+
+    if (kDebugMode && user?.photoURL != null) {
+      print('🔵 BUILD: Rendering with photoURL: ${user!.photoURL}');
+    }
     
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -532,31 +622,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   backgroundColor: Colors.white,
                   child: isUploadingImage
                       ? const CircularProgressIndicator()
-                      : user?.photoURL != null
-                          ? ClipOval(
-                              child: Image.network(
-                                user!.photoURL!,
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return const CircularProgressIndicator();
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Theme.of(context).colorScheme.primary,
-                                  );
-                                },
-                              ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                      : RobustProfileImage(
+                          user: user,
+                          size: 50,
+                          iconColor: Theme.of(context).colorScheme.primary,
+                        ),
                 ),
                 Positioned(
                   bottom: 0,

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
 import '../models/user_profile.dart';
+import '../widgets/robust_profile_image.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 import 'learn_screen.dart';
@@ -367,31 +369,11 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Colors.white,
-                  child: user?.photoURL != null
-                      ? ClipOval(
-                          child: Image.network(
-                            user!.photoURL!,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const CircularProgressIndicator(strokeWidth: 2);
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.person,
-                                size: 30,
-                                color: Theme.of(context).colorScheme.primary,
-                              );
-                            },
-                          ),
-                        )
-                      : Icon(
-                          Icons.person,
-                          size: 30,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                  child: RobustProfileImage(
+                    user: user,
+                    size: 30,
+                    iconColor: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -722,4 +704,6 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
       ),
     );
   }
+
+
 }

@@ -6,6 +6,12 @@
     <!-- Wake lock permission for Firebase -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Camera and Storage permissions for profile picture upload -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
     <application
         android:label="Haki Yangu"
         android:name="com.innoloom.hakiyangu.MainApplication"

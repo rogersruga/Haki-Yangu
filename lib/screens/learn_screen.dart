@@ -277,16 +277,8 @@ class _LearnScreenState extends State<LearnScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            icon: const Icon(
-              Icons.arrow_back,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
+          // Removed back button since this screen is used within MainScreen tabs
+          const SizedBox(width: 48), // Placeholder for spacing
           const Text(
             'Justice Simplified',
             style: TextStyle(

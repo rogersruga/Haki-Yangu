@@ -24,8 +24,12 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   late int _selectedIndex;
 
-  final List<Widget> _screens = [
-    const HomeScreenContent(),
+  List<Widget> get _screens => [
+    HomeScreenContent(onTabChange: (index) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }),
     const LearnScreen(),
     const QuizScreen(),
     const ProfileScreen(),
@@ -190,7 +194,9 @@ class PlaceholderScreen extends StatelessWidget {
 }
 
 class HomeScreenContent extends StatefulWidget {
-  const HomeScreenContent({super.key});
+  final Function(int)? onTabChange;
+
+  const HomeScreenContent({super.key, this.onTabChange});
 
   @override
   State<HomeScreenContent> createState() => _HomeScreenContentState();
@@ -565,9 +571,8 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             icon: Icons.menu_book,
             color: const Color(0xFF7B1FA2),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Justice Simplified coming soon!')),
-              );
+              // Navigate to Learn tab (index 1)
+              widget.onTabChange?.call(1);
             },
           ),
           const SizedBox(height: 12),
@@ -577,9 +582,8 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             icon: Icons.quiz,
             color: const Color(0xFF388E3C),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Quiz section coming soon!')),
-              );
+              // Navigate to Quiz tab (index 2)
+              widget.onTabChange?.call(2);
             },
           ),
           const SizedBox(height: 12),
@@ -589,9 +593,8 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
             icon: Icons.person,
             color: const Color(0xFFE91E63),
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Navigate to profile tab')),
-              );
+              // Navigate to Profile tab (index 3)
+              widget.onTabChange?.call(3);
             },
           ),
           const SizedBox(height: 12),

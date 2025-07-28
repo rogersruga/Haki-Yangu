@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   # For onboarding and splash screen
-  flutter_native_splash: ^2.4.1
+  # flutter_native_splash: ^2.4.1  # Temporarily disabled due to build issues
   shared_preferences: ^2.3.2
   smooth_page_indicator: ^1.2.0
 

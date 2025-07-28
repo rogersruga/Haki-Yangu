@@ -8,6 +8,8 @@ import '../models/user_profile.dart';
 import '../widgets/robust_profile_image.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
+import 'learn_screen.dart';
+import 'quiz_screen.dart';
 import 'haki_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -369,8 +371,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.menu_book,
             color: const Color(0xFF7B1FA2), // Purple
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Justice Simplified coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LearnScreen(),
+                ),
               );
             },
           ),
@@ -381,8 +386,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.quiz,
             color: const Color(0xFF388E3C), // Green
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Quiz section coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const QuizScreen(),
+                ),
               );
             },
           ),

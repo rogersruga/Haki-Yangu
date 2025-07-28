@@ -103,7 +103,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (!didPop) {
-          _navigateToLearnScreen();
+          _navigateToQuizScreen();
         }
       },
       child: Scaffold(
@@ -340,7 +340,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
-            onPressed: _navigateToLearnScreen,
+            onPressed: _navigateToQuizScreen,
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               side: BorderSide(color: Theme.of(context).colorScheme.primary),
@@ -653,9 +653,9 @@ class _QuizResultScreenState extends State<QuizResultScreen>
     );
   }
 
-  void _navigateToLearnScreen() {
+  void _navigateToQuizScreen() {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)), // Index 1 is Learn tab
+      MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 2)), // Index 2 is Quiz tab
       (route) => route.isFirst,
     );
   }

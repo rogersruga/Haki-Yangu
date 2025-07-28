@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/quiz.dart';
 import 'quiz_taking_screen.dart';
-import 'learn_screen.dart';
+import 'main_screen.dart';
 
 class QuizResultScreen extends StatefulWidget {
   final Quiz quiz;
@@ -120,21 +120,23 @@ class _QuizResultScreenState extends State<QuizResultScreen>
           elevation: 0,
           automaticallyImplyLeading: false,
         ),
-        body: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40), // Added extra bottom padding
-            child: Column(
-              children: [
-                _buildScoreCard(),
-                const SizedBox(height: 24),
-                _buildStatsCard(),
-                const SizedBox(height: 24),
-                _buildActionButtons(),
-                const SizedBox(height: 24),
-                _buildQuestionReview(),
-                const SizedBox(height: 20), // Extra spacing at bottom
-              ],
+        body: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40), // Reduced padding since SafeArea handles system UI
+              child: Column(
+                children: [
+                  _buildScoreCard(),
+                  const SizedBox(height: 24),
+                  _buildStatsCard(),
+                  const SizedBox(height: 24),
+                  _buildActionButtons(),
+                  const SizedBox(height: 24),
+                  _buildQuestionReview(),
+                  const SizedBox(height: 40), // Increased extra spacing at bottom
+                ],
+              ),
             ),
           ),
         ),
@@ -653,7 +655,7 @@ class _QuizResultScreenState extends State<QuizResultScreen>
 
   void _navigateToLearnScreen() {
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const LearnScreen()),
+      MaterialPageRoute(builder: (context) => const MainScreen(initialIndex: 1)), // Index 1 is Learn tab
       (route) => route.isFirst,
     );
   }

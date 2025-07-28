@@ -153,7 +153,7 @@ class _QuizScreenState extends State<QuizScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40), // Added extra bottom padding
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), // Increased bottom padding significantly
       itemCount: quizzes.length,
       itemBuilder: (context, index) {
         final quiz = quizzes[index];

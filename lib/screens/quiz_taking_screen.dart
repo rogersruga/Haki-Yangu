@@ -140,7 +140,6 @@ class _QuizTakingScreenState extends State<QuizTakingScreen>
                 child: _buildQuestionContent(question),
               ),
             ),
-            _buildNavigationButtons(),
           ],
         ),
       ),
@@ -229,14 +228,22 @@ class _QuizTakingScreenState extends State<QuizTakingScreen>
           ),
           const SizedBox(height: 32),
           Expanded(
-            child: ListView.builder(
-              itemCount: question.options.length,
-              itemBuilder: (context, index) {
-                return _buildAnswerOption(question, index);
-              },
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: question.options.length,
+                    itemBuilder: (context, index) {
+                      return _buildAnswerOption(question, index);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+                _buildInlineNavigationButtons(),
+                const SizedBox(height: 20), // Extra spacing from bottom
+              ],
             ),
           ),
-
         ],
       ),
     );
@@ -296,9 +303,9 @@ class _QuizTakingScreenState extends State<QuizTakingScreen>
 
 
 
-  Widget _buildNavigationButtons() {
+  Widget _buildInlineNavigationButtons() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40), // Added extra bottom padding
+      padding: const EdgeInsets.symmetric(horizontal: 0), // No extra horizontal padding
       child: Row(
         children: [
           if (currentQuestionIndex > 0)

@@ -147,13 +147,13 @@ class _BillOfRightsDetailScreenState extends State<BillOfRightsDetailScreen> {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF7B1FA2), // Purple
-            Color(0xFF9C27B0), // Violet
+            Theme.of(context).colorScheme.primary, // App theme green
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8), // Lighter green
           ],
         ),
       ),

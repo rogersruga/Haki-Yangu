@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'user_profile.dart';
 
 /// Represents a single quiz question with multiple choice options
 class QuizQuestion {

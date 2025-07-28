@@ -154,7 +154,7 @@ class QuizService {
       final userProfile = await _firestoreService.getUserProfile(user.uid);
       if (userProfile?.progress == null) return const QuizStats();
 
-      final progress = userProfile!.progress!;
+      final progress = userProfile!.progress;
       
       // Calculate module scores
       final moduleScores = <String, int>{};

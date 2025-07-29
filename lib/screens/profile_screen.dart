@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../services/profile_service.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
+import '../services/activity_service.dart';
 import '../models/user_profile.dart';
 import '../widgets/robust_profile_image.dart';
 import 'auth_screen.dart';
@@ -22,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ProfileService _profileService = ProfileService();
   final ProgressService _progressService = ProgressService();
   final RefreshService _refreshService = RefreshService();
+  final ActivityService _activityService = ActivityService();
   UserProfile? userProfile;
   User? currentUser; // Add this to track user state
   bool isLoading = true;
@@ -95,6 +97,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: Colors.green,
           ),
         );
+
+        // Log profile update activity
+        await _activityService.recordProfileUpdate();
+
         // Reload user data to show updated picture
         await _loadUserProfile();
       }
@@ -192,6 +198,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               backgroundColor: Colors.green,
             ),
           );
+
+          // Log profile update activity
+          await _activityService.recordProfileUpdate();
+
           await _loadUserProfile();
         }
       } catch (e) {

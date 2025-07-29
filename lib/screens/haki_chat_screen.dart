@@ -6,6 +6,7 @@ import '../services/chat_service.dart';
 import '../services/openrouter_service.dart';
 import '../services/error_handler.dart';
 import '../services/refresh_service.dart';
+import '../services/activity_service.dart';
 
 class HakiChatScreen extends StatefulWidget {
   final String? sessionId;
@@ -19,6 +20,7 @@ class HakiChatScreen extends StatefulWidget {
 class _HakiChatScreenState extends State<HakiChatScreen> {
   final ChatService _chatService = ChatService();
   final RefreshService _refreshService = RefreshService();
+  final ActivityService _activityService = ActivityService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -86,6 +88,9 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
       _messages.add(userMessage);
     });
     _scrollToBottom();
+
+    // Log chat interaction activity
+    await _activityService.recordChatInteraction(messageText);
 
     // Add loading message
     final loadingMessage = ChatMessage.loading();

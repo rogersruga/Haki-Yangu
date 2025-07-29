@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/quiz.dart';
 import '../services/quiz_service.dart';
+import '../services/activity_service.dart';
 import 'quiz_result_screen.dart';
 
 class QuizTakingScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class QuizTakingScreen extends StatefulWidget {
 class _QuizTakingScreenState extends State<QuizTakingScreen>
     with TickerProviderStateMixin {
   final QuizService _quizService = QuizService();
+  final ActivityService _activityService = ActivityService();
   
   int currentQuestionIndex = 0;
   List<int?> userAnswers = [];
@@ -425,19 +427,29 @@ class _QuizTakingScreenState extends State<QuizTakingScreen>
 
     if (mounted) {
       if (success) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => QuizResultScreen(
-              quiz: widget.quiz,
-              score: score,
-              totalQuestions: widget.quiz.questions.length,
-              timeSpent: timeSpent,
-              userAnswers: userAnswers,
-              correctAnswers: correctAnswers,
-            ),
-          ),
+        // Log quiz completion activity
+        await _activityService.recordQuizCompletion(
+          quizTitle: widget.quiz.title,
+          score: score,
+          totalQuestions: widget.quiz.questions.length,
+          timeSpent: timeSpent,
         );
+
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => QuizResultScreen(
+                quiz: widget.quiz,
+                score: score,
+                totalQuestions: widget.quiz.questions.length,
+                timeSpent: timeSpent,
+                userAnswers: userAnswers,
+                correctAnswers: correctAnswers,
+              ),
+            ),
+          );
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

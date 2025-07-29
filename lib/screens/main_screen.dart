@@ -4,8 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
+import '../services/activity_service.dart';
 import '../models/user_profile.dart';
+import '../models/activity.dart';
 import '../widgets/robust_profile_image.dart';
+import '../widgets/activity_item.dart';
 import 'auth_screen.dart';
 import 'profile_screen.dart';
 import 'learn_screen.dart';
@@ -206,6 +209,7 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   final AuthService _authService = AuthService();
   final ProgressService _progressService = ProgressService();
   final RefreshService _refreshService = RefreshService();
+  final ActivityService _activityService = ActivityService();
   UserProfile? userProfile;
   bool isLoading = true;
 
@@ -213,6 +217,29 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   void initState() {
     super.initState();
     _loadUserProfile();
+    _initializeActivityService();
+    // Listen to activity changes
+    _activityService.addListener(_onActivityChanged);
+  }
+
+  @override
+  void dispose() {
+    _activityService.removeListener(_onActivityChanged);
+    super.dispose();
+  }
+
+  void _onActivityChanged() {
+    if (mounted) {
+      setState(() {
+        // Trigger rebuild when activities change
+      });
+    }
+  }
+
+
+
+  Future<void> _initializeActivityService() async {
+    await _activityService.initialize();
   }
 
   Future<void> _loadUserProfile() async {
@@ -693,60 +720,126 @@ class _HomeScreenContentState extends State<HomeScreenContent> {
   Widget _buildRecentActivitySection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recent Activity',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+      child: ActivityCard(
+        activities: _activityService.getRecentActivities(limit: 5),
+        title: 'Recent Activity',
+        onActivityTap: _handleActivityTap,
+        onViewAll: () {
+          // Navigate to full activity screen
+          _showAllActivities();
+        },
+        maxItems: 5,
+      ),
+    );
+  }
+
+  void _handleActivityTap(Activity activity) {
+    // Handle activity tap based on activity type
+    switch (activity.type) {
+      case ActivityType.quizCompleted:
+        // Navigate to quiz results or quiz screen
+        widget.onTabChange?.call(2); // Quiz tab
+        break;
+      case ActivityType.moduleViewed:
+      case ActivityType.moduleCompleted:
+        // Navigate to learn screen
+        widget.onTabChange?.call(1); // Learn tab
+        break;
+      case ActivityType.chatInteraction:
+        // Navigate to chat screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HakiChatScreen(),
           ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
-                  spreadRadius: 1,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+        );
+        break;
+      case ActivityType.profileUpdated:
+        // Navigate to profile
+        widget.onTabChange?.call(3); // Profile tab
+        break;
+      default:
+        // Default action - show activity details
+        _showActivityDetails(activity);
+        break;
+    }
+  }
+
+  void _showAllActivities() {
+    // Show a bottom sheet or navigate to full activity screen
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        minChildSize: 0.5,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.history,
-                  size: 48,
-                  color: Colors.grey[400],
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'All Activity',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'No recent activity',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                  ),
+              ),
+              // Activity list
+              Expanded(
+                child: ActivityList(
+                  activities: _activityService.activities,
+                  onActivityTap: (activity) {
+                    Navigator.pop(context);
+                    _handleActivityTap(activity);
+                  },
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start exploring to see your activity here',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[500],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showActivityDetails(Activity activity) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(activity.title),
+        content: Text(activity.description),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
           ),
         ],
       ),

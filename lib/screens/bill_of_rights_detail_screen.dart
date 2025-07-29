@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/activity_service.dart';
 import '../widgets/module_completion_button.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
@@ -12,7 +13,18 @@ class BillOfRightsDetailScreen extends StatefulWidget {
 
 class _BillOfRightsDetailScreenState extends State<BillOfRightsDetailScreen> {
   final RefreshService _refreshService = RefreshService();
+  final ActivityService _activityService = ActivityService();
   bool isBookmarked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _logModuleView();
+  }
+
+  Future<void> _logModuleView() async {
+    await _activityService.recordModuleView('Bill of Rights');
+  }
 
   Future<void> _onRefresh() async {
     try {

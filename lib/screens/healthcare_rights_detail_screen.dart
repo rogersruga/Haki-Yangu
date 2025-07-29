@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/activity_service.dart';
 import '../widgets/module_completion_button.dart';
 import '../services/progress_service.dart';
 import '../services/refresh_service.dart';
@@ -12,7 +13,19 @@ class HealthcareRightsDetailScreen extends StatefulWidget {
 
 class _HealthcareRightsDetailScreenState extends State<HealthcareRightsDetailScreen> {
   final RefreshService _refreshService = RefreshService();
+  final ActivityService _activityService = ActivityService();
   bool isBookmarked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Log module view activity
+    _logModuleView();
+  }
+
+  Future<void> _logModuleView() async {
+    await _activityService.recordModuleView('Healthcare Rights');
+  }
 
   Future<void> _onRefresh() async {
     try {

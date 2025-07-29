@@ -7,7 +7,7 @@ class OpenRouterService {
   static const String _baseUrl = 'https://openrouter.ai/api/v1';
   static const String _apiKey =
       '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';
-  static const String _model = 'tngtech/deepseek-r1t2-chimera:free';
+  static const String _model = 'google/gemini-2.0-flash-exp:free';
 
   // Validate API key format
   static bool get _isApiKeyValid {
@@ -704,5 +704,67 @@ Context: The user is asking about gender equality. Refer to:
     }
 
     return results;
+  }
+
+  // Simple test method to verify API key works
+  Future<Map<String, dynamic>> testApiConnection() async {
+    try {
+      if (kDebugMode) {
+        print('🔵 Testing OpenRouter API connection...');
+        print('🔵 API Key: ${_apiKey.substring(0, 20)}...');
+        print('🔵 Model: $_model');
+      }
+
+      final requestBody = {
+        'model': _model,
+        'messages': [
+          {'role': 'user', 'content': 'Hello, can you respond with just "API test successful"?'},
+        ],
+        'max_tokens': 20,
+        'temperature': 0.1,
+      };
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/chat/completions'),
+            headers: _headers,
+            body: jsonEncode(requestBody),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        print('🔵 Test response status: ${response.statusCode}');
+        print('🔵 Test response body: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['choices'] != null && data['choices'].isNotEmpty) {
+          final content = data['choices'][0]['message']['content'];
+          return {
+            'success': true,
+            'message': 'API connection successful',
+            'response': content,
+            'status_code': response.statusCode,
+          };
+        }
+      }
+
+      return {
+        'success': false,
+        'message': 'API connection failed',
+        'status_code': response.statusCode,
+        'error': response.body,
+      };
+    } catch (e) {
+      if (kDebugMode) {
+        print('🔴 API test error: $e');
+      }
+      return {
+        'success': false,
+        'message': 'API test failed with exception',
+        'error': e.toString(),
+      };
+    }
   }
 }

@@ -181,6 +181,48 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
     }
   }
 
+  // Test API connection (debug only)
+  Future<void> _testApiConnection() async {
+    if (!kDebugMode) return;
+
+    try {
+      final openRouterService = OpenRouterService();
+      final result = await openRouterService.testApiConnection();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(result['success'] ? 'API Test Success' : 'API Test Failed'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Status: ${result['success'] ? 'Success' : 'Failed'}'),
+                if (result['status_code'] != null)
+                  Text('Status Code: ${result['status_code']}'),
+                if (result['response'] != null)
+                  Text('Response: ${result['response']}'),
+                if (result['error'] != null)
+                  Text('Error: ${result['error']}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Test failed: $e');
+      }
+    }
+  }
+
   void _showSuggestedQuestions() {
     final suggestions = _chatService.getSuggestedQuestions();
 
@@ -388,6 +430,12 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
             onPressed: _showSuggestedQuestions,
             tooltip: 'Suggested Questions',
           ),
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.bug_report),
+              onPressed: _testApiConnection,
+              tooltip: 'Test API Connection',
+            ),
         ],
       ),
       body: _isLoading

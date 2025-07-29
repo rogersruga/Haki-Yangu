@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum MessageType {
-  user,
-  assistant,
-  system,
-}
+enum MessageType { user, assistant, system }
 
 class ChatMessage {
   final String id;
@@ -54,7 +50,7 @@ class ChatMessage {
   factory ChatMessage.error(String errorMessage) {
     return ChatMessage(
       id: 'error_${DateTime.now().millisecondsSinceEpoch}',
-      content: 'Sorry, I encountered an error. Please try again.',
+      content: errorMessage,
       type: MessageType.assistant,
       timestamp: DateTime.now(),
       error: errorMessage,
@@ -164,16 +160,19 @@ class ChatSession {
 
   factory ChatSession.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return ChatSession(
       id: doc.id,
       userId: data['userId'] ?? '',
       title: data['title'] ?? 'Chat with Haki',
-      messages: (data['messages'] as List<dynamic>?)
-          ?.map((m) => ChatMessage.fromMap(m))
-          .toList() ?? [],
+      messages:
+          (data['messages'] as List<dynamic>?)
+              ?.map((m) => ChatMessage.fromMap(m))
+              .toList() ??
+          [],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      lastUpdated: (data['lastUpdated'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      lastUpdated:
+          (data['lastUpdated'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 }
@@ -215,18 +214,11 @@ class OpenRouterResponse {
   });
 
   factory OpenRouterResponse.success(String content) {
-    return OpenRouterResponse(
-      content: content,
-      success: true,
-    );
+    return OpenRouterResponse(content: content, success: true);
   }
 
   factory OpenRouterResponse.error(String error) {
-    return OpenRouterResponse(
-      content: '',
-      error: error,
-      success: false,
-    );
+    return OpenRouterResponse(content: '', error: error, success: false);
   }
 }
 
@@ -294,10 +286,15 @@ Your goal is to empower Kenyan citizens with knowledge of their rights and civic
   ];
 
   static const Map<String, String> quickResponses = {
-    'hello': 'Hello! I\'m Haki, your AI assistant for Kenyan constitutional law and civic education. I can help you understand the Constitution of Kenya 2010, your fundamental rights, and various acts of parliament. What would you like to learn about today?',
-    'hi': 'Hi there! I\'m Haki, here to help you understand your constitutional rights and Kenyan laws. How can I assist you today?',
-    'good morning': 'Good morning! I\'m Haki, your constitutional law assistant. How can I help you understand your rights and Kenyan laws today?',
-    'good afternoon': 'Good afternoon! I\'m Haki, ready to help you with questions about the Constitution and your rights. What would you like to know?',
-    'good evening': 'Good evening! I\'m Haki, here to assist with constitutional law and civic education. How can I help you tonight?',
+    'hello':
+        'Hello! I\'m Haki, your AI assistant for Kenyan constitutional law and civic education. I can help you understand the Constitution of Kenya 2010, your fundamental rights, and various acts of parliament. What would you like to learn about today?',
+    'hi':
+        'Hi there! I\'m Haki, here to help you understand your constitutional rights and Kenyan laws. How can I assist you today?',
+    'good morning':
+        'Good morning! I\'m Haki, your constitutional law assistant. How can I help you understand your rights and Kenyan laws today?',
+    'good afternoon':
+        'Good afternoon! I\'m Haki, ready to help you with questions about the Constitution and your rights. What would you like to know?',
+    'good evening':
+        'Good evening! I\'m Haki, here to assist with constitutional law and civic education. How can I help you tonight?',
   };
 }

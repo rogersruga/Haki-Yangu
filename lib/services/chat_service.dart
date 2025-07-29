@@ -16,21 +16,21 @@ class ChatService {
   final OfflineService _offlineService = OfflineService();
 
   // Collection reference for chat sessions
-  CollectionReference get _chatsCollection => 
+  CollectionReference get _chatsCollection =>
       _firestoreService.firestore.collection('chats');
 
   // Create a new chat session
   Future<ChatSession> createChatSession(String userId) async {
     try {
       final session = ChatSession.create(userId);
-      
+
       // Save to Firestore
       await _chatsCollection.doc(session.id).set(session.toFirestore());
-      
+
       if (kDebugMode) {
         print('Created new chat session: ${session.id}');
       }
-      
+
       return session;
     } catch (e) {
       if (kDebugMode) {
@@ -89,7 +89,10 @@ class ChatService {
       }
 
       // Check for quick responses first (only for greetings in new conversations)
-      final quickResponse = _openRouterService.getQuickResponse(userMessage, conversationHistory);
+      final quickResponse = _openRouterService.getQuickResponse(
+        userMessage,
+        conversationHistory,
+      );
       if (quickResponse != null) {
         if (kDebugMode) {
           print('🟡 Using quick response for greeting');
@@ -104,15 +107,35 @@ class ChatService {
         return assistantMessage;
       }
 
-      // Check if service is available
+            // Check if service is available
       final isAvailable = await _openRouterService.isServiceAvailable();
       if (!isAvailable) {
         if (kDebugMode) {
           print('🔴 OpenRouter service unavailable');
         }
+        
+        // Try to provide offline response for common topics
+        final offlineResponse = _openRouterService.getOfflineResponse(
+          userMessage,
+        );
+        if (offlineResponse != null) {
+          if (kDebugMode) {
+            print('🟡 Using offline response for topic');
+          }
+          final assistantMessage = ChatMessage.assistant(offlineResponse);
+          // Save offline response in background
+          _saveMessageToSession(sessionId, assistantMessage).catchError((e) {
+            if (kDebugMode) {
+              print('🔴 Failed to save offline response: $e');
+            }
+          });
+          return assistantMessage;
+        }
+        
         final errorMessage = ChatMessage.assistant(
-          'I\'m currently offline, but I can still help with basic questions about the Constitution. '
-          'Try asking about fundamental rights, voting, employment, or land rights.',
+          'I\'m currently experiencing connectivity issues, but I can still help with basic questions about the Constitution. '
+          'Try asking about fundamental rights, voting, employment, or land rights. '
+          'I\'ll try to reconnect automatically for your next question.',
         );
         // Save offline message in background
         _saveMessageToSession(sessionId, errorMessage).catchError((e) {
@@ -140,9 +163,22 @@ class ChatService {
           print('🟢 Received successful AI response');
         }
       } else {
-        assistantMessage = ChatMessage.error(response.error ?? 'Unknown error');
-        if (kDebugMode) {
-          print('🔴 AI response error: ${response.error}');
+        // Try offline response before showing error
+        final offlineResponse = _openRouterService.getOfflineResponse(
+          userMessage,
+        );
+        if (offlineResponse != null) {
+          if (kDebugMode) {
+            print('🟡 Using offline response due to API error');
+          }
+          assistantMessage = ChatMessage.assistant(offlineResponse);
+        } else {
+          assistantMessage = ChatMessage.error(
+            response.error ?? 'Unknown error',
+          );
+          if (kDebugMode) {
+            print('🔴 AI response error: ${response.error}');
+          }
         }
       }
 
@@ -160,7 +196,9 @@ class ChatService {
         print('🔴 Stack trace: ${StackTrace.current}');
       }
 
-      final errorMessage = ChatMessage.error('Sorry, I encountered an error. Please try again.');
+      final errorMessage = ChatMessage.error(
+        'I\'m having trouble connecting to my AI service right now. Please check your internet connection and try again. If the problem persists, you can still ask me basic questions about the Constitution and I\'ll do my best to help.',
+      );
 
       // Try to save error message, but don't block on it
       _saveMessageToSession(sessionId, errorMessage).catchError((saveError) {
@@ -174,7 +212,10 @@ class ChatService {
   }
 
   // Save a message to a chat session
-  Future<void> _saveMessageToSession(String sessionId, ChatMessage message) async {
+  Future<void> _saveMessageToSession(
+    String sessionId,
+    ChatMessage message,
+  ) async {
     try {
       if (kDebugMode) {
         print('🔵 Attempting to save message to session: $sessionId');
@@ -187,13 +228,10 @@ class ChatService {
           print('🔴 User not authenticated, cannot save to Firestore');
         }
         // Store offline for later sync when user logs in
-        await _offlineService.storePendingOperation(
-          'saveChatMessage',
-          {
-            'sessionId': sessionId,
-            'message': message.toMap(),
-          },
-        );
+        await _offlineService.storePendingOperation('saveChatMessage', {
+          'sessionId': sessionId,
+          'message': message.toMap(),
+        });
         return;
       }
 
@@ -221,13 +259,10 @@ class ChatService {
           print('🔴 Session document does not exist: $sessionId');
         }
         // Store offline for later sync
-        await _offlineService.storePendingOperation(
-          'saveChatMessage',
-          {
-            'sessionId': sessionId,
-            'message': message.toMap(),
-          },
-        );
+        await _offlineService.storePendingOperation('saveChatMessage', {
+          'sessionId': sessionId,
+          'message': message.toMap(),
+        });
       }
     } catch (e) {
       if (kDebugMode) {
@@ -237,13 +272,10 @@ class ChatService {
 
       // Store offline for later sync
       try {
-        await _offlineService.storePendingOperation(
-          'saveChatMessage',
-          {
-            'sessionId': sessionId,
-            'message': message.toMap(),
-          },
-        );
+        await _offlineService.storePendingOperation('saveChatMessage', {
+          'sessionId': sessionId,
+          'message': message.toMap(),
+        });
         if (kDebugMode) {
           print('🟡 Stored pending operation: saveChatMessage');
         }
@@ -264,13 +296,10 @@ class ChatService {
         print('Error updating chat session: $e');
       }
       // Store offline for later sync
-      await _offlineService.storePendingOperation(
-        'updateChatSession',
-        {
-          'sessionId': session.id,
-          'session': session.toFirestore(),
-        },
-      );
+      await _offlineService.storePendingOperation('updateChatSession', {
+        'sessionId': session.id,
+        'session': session.toFirestore(),
+      });
     }
   }
 
@@ -283,10 +312,9 @@ class ChatService {
         print('Error deleting chat session: $e');
       }
       // Store offline for later sync
-      await _offlineService.storePendingOperation(
-        'deleteChatSession',
-        {'sessionId': sessionId},
-      );
+      await _offlineService.storePendingOperation('deleteChatSession', {
+        'sessionId': sessionId,
+      });
     }
   }
 
@@ -307,9 +335,11 @@ class ChatService {
         .orderBy('lastUpdated', descending: true)
         .limit(20)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => ChatSession.fromFirestore(doc))
-            .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ChatSession.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   // Get suggested questions
@@ -325,16 +355,18 @@ class ChatService {
     try {
       final sessions = await getUserChatSessions(userId);
       final allMessages = <ChatMessage>[];
-      
+
       for (final session in sessions) {
-        final matchingMessages = session.messages.where((message) =>
-            message.content.toLowerCase().contains(query.toLowerCase()));
+        final matchingMessages = session.messages.where(
+          (message) =>
+              message.content.toLowerCase().contains(query.toLowerCase()),
+        );
         allMessages.addAll(matchingMessages);
       }
-      
+
       // Sort by timestamp, most recent first
       allMessages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      
+
       return allMessages.take(50).toList(); // Limit to 50 results
     } catch (e) {
       if (kDebugMode) {
@@ -348,30 +380,33 @@ class ChatService {
   Future<Map<String, dynamic>> getChatStatistics(String userId) async {
     try {
       final sessions = await getUserChatSessions(userId);
-      
+
       int totalMessages = 0;
       int totalSessions = sessions.length;
       DateTime? firstChatDate;
       DateTime? lastChatDate;
-      
+
       for (final session in sessions) {
         totalMessages += session.messages.length;
-        
-        if (firstChatDate == null || session.createdAt.isBefore(firstChatDate)) {
+
+        if (firstChatDate == null ||
+            session.createdAt.isBefore(firstChatDate)) {
           firstChatDate = session.createdAt;
         }
-        
+
         if (lastChatDate == null || session.lastUpdated.isAfter(lastChatDate)) {
           lastChatDate = session.lastUpdated;
         }
       }
-      
+
       return {
         'totalSessions': totalSessions,
         'totalMessages': totalMessages,
         'firstChatDate': firstChatDate,
         'lastChatDate': lastChatDate,
-        'averageMessagesPerSession': totalSessions > 0 ? totalMessages / totalSessions : 0,
+        'averageMessagesPerSession': totalSessions > 0
+            ? totalMessages / totalSessions
+            : 0,
       };
     } catch (e) {
       if (kDebugMode) {

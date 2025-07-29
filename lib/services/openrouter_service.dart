@@ -5,14 +5,26 @@ import '../models/chat_models.dart';
 
 class OpenRouterService {
   static const String _baseUrl = 'https://openrouter.ai/api/v1';
-  static const String _apiKey = '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';
+  static const String _apiKey =
+      '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';
   static const String _model = 'tngtech/deepseek-r1t2-chimera:free';
 
   // Validate API key format
   static bool get _isApiKeyValid {
-    return _apiKey.isNotEmpty &&
-           _apiKey.startsWith('sk-or-v1-') &&
-           _apiKey.length > 20;
+    final isValid =
+        _apiKey.isNotEmpty &&
+        _apiKey.startsWith('sk-or-v1-') &&
+        _apiKey.length > 20;
+
+    if (kDebugMode) {
+      print('🔵 API Key validation:');
+      print('  - Is empty: ${_apiKey.isEmpty}');
+      print('  - Starts with sk-or-v1-: ${_apiKey.startsWith('sk-or-v1-')}');
+      print('  - Length > 20: ${_apiKey.length > 20}');
+      print('  - Final result: $isValid');
+    }
+
+    return isValid;
   }
 
   // Headers following OpenRouter documentation format
@@ -56,7 +68,7 @@ class OpenRouterService {
         print('🔵 Model: $_model');
         print('🔵 Message count: ${messages.length}');
         print('🔵 API Key (first 20 chars): ${_apiKey.substring(0, 20)}...');
-        print('🔵 Authorization header: Bearer ${_apiKey.substring(0, 20)}...');
+        print('🔵 Full API key: $_apiKey');
       }
 
       final uri = Uri.parse('$_baseUrl/chat/completions');
@@ -66,47 +78,119 @@ class OpenRouterService {
       if (kDebugMode) {
         print('🔵 Request URI: $uri');
         print('🔵 Request headers: $headers');
-        print('🔵 Request body: $body');
+        print('🔵 Full API key length: ${_apiKey.length}');
+        print('🔵 API key format valid: ${_isApiKeyValid}');
       }
 
-      final response = await http.post(
-        uri,
-        headers: headers,
-        body: body,
-      ).timeout(const Duration(seconds: 30));
-
-      if (kDebugMode) {
-        print('OpenRouter response status: ${response.statusCode}');
-        print('OpenRouter response body: ${response.body}');
-      }
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['choices'] != null && data['choices'].isNotEmpty) {
-          final content = data['choices'][0]['message']['content'] as String;
+      // Add retry logic for network issues
+      int retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          final response = await http
+              .post(uri, headers: headers, body: body)
+              .timeout(const Duration(seconds: 15));
 
           if (kDebugMode) {
-            print('🟢 AI Response received: ${content.substring(0, content.length > 100 ? 100 : content.length)}...');
+            print('OpenRouter response status: ${response.statusCode}');
+            print('OpenRouter response body: ${response.body}');
           }
 
-          return OpenRouterResponse.success(content.trim());
-        } else {
+                if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+
+            if (kDebugMode) {
+              print('🟢 Full API response: $data');
+            }
+
+            if (data['choices'] != null && data['choices'].isNotEmpty) {
+              final content = data['choices'][0]['message']['content'] as String;
+
+              if (kDebugMode) {
+                print(
+                  '🟢 AI Response received: ${content.substring(0, content.length > 100 ? 100 : content.length)}...',
+                );
+              }
+
+              return OpenRouterResponse.success(content.trim());
+            } else {
+              if (kDebugMode) {
+                print('🔴 No choices in API response: $data');
+              }
+              return OpenRouterResponse.error(
+                'No response from AI model - please try again',
+              );
+            }
+          } else {
+            if (kDebugMode) {
+              print('🔴 HTTP Error ${response.statusCode}: ${response.body}');
+            }
+
+            String errorMessage;
+            try {
+              final errorData = jsonDecode(response.body);
+              errorMessage =
+                  errorData['error']?['message'] ?? 'Unknown error occurred';
+            } catch (e) {
+              errorMessage = 'HTTP ${response.statusCode}: ${response.body}';
+            }
+
+            if (kDebugMode) {
+              print('🔴 API Error ${response.statusCode}: $errorMessage');
+            }
+
+            // If it's a 401 error, don't retry as it's an authentication issue
+            if (response.statusCode == 401) {
+              return OpenRouterResponse.error(
+                'Authentication failed. Please check your API key configuration.',
+              );
+            }
+            
+            // For other errors, retry if we haven't exceeded max retries
+            if (retryCount < maxRetries - 1) {
+              retryCount++;
+              if (kDebugMode) {
+                print('🔄 Retrying request (attempt ${retryCount + 1}/$maxRetries)...');
+              }
+              await Future.delayed(Duration(seconds: retryCount * 2)); // Exponential backoff
+              continue;
+            }
+            
+            // Provide more specific error messages for final attempt
+            if (response.statusCode == 429) {
+              return OpenRouterResponse.error(
+                'Rate limit exceeded. Please try again later.',
+              );
+            } else if (response.statusCode == 500) {
+              return OpenRouterResponse.error(
+                'Server error. Please try again later.',
+              );
+            } else {
+              return OpenRouterResponse.error('API Error: $errorMessage');
+            }
+          }
+        } catch (e) {
           if (kDebugMode) {
-            print('🔴 No choices in API response: $data');
+            print('🔴 Network error on attempt ${retryCount + 1}: $e');
           }
-          return OpenRouterResponse.error('No response from AI model');
+          
+          if (retryCount < maxRetries - 1) {
+            retryCount++;
+            if (kDebugMode) {
+              print('🔄 Retrying request (attempt ${retryCount + 1}/$maxRetries)...');
+            }
+            await Future.delayed(Duration(seconds: retryCount * 2)); // Exponential backoff
+            continue;
+          }
+          
+          // If all retries failed, throw the error
+          rethrow;
         }
-      } else {
-        final errorData = jsonDecode(response.body);
-        final errorMessage = errorData['error']?['message'] ?? 'Unknown error occurred';
-
-        if (kDebugMode) {
-          print('🔴 API Error ${response.statusCode}: $errorMessage');
-        }
-
-        return OpenRouterResponse.error('API Error: $errorMessage');
       }
+      
+      // This should never be reached, but just in case
+      return OpenRouterResponse.error('Request failed after $maxRetries attempts');
     } catch (e) {
       if (kDebugMode) {
         print('Error calling OpenRouter API: $e');
@@ -123,13 +207,11 @@ class OpenRouterService {
 
     // Add system prompt with topic-specific context
     final topicContext = _getTopicContext(userMessage);
-    final systemContent = ConstitutionContext.systemPrompt +
+    final systemContent =
+        ConstitutionContext.systemPrompt +
         (topicContext.isNotEmpty ? '\n\n$topicContext' : '');
 
-    messages.add({
-      'role': 'system',
-      'content': systemContent,
-    });
+    messages.add({'role': 'system', 'content': systemContent});
 
     // Add conversation history (last 15 messages to provide better context)
     final recentHistory = conversationHistory
@@ -149,20 +231,29 @@ class OpenRouterService {
     }
 
     // Add current user message
-    messages.add({
-      'role': 'user',
-      'content': userMessage,
-    });
+    messages.add({'role': 'user', 'content': userMessage});
 
     if (kDebugMode) {
-      print('🔵 Sending ${messages.length} messages to AI (${historyToInclude.length} history + 1 system + 1 current)');
+      print(
+        '🔵 Sending ${messages.length} messages to AI (${historyToInclude.length} history + 1 system + 1 current)',
+      );
+      print('🔵 Conversation history:');
+      for (int i = 0; i < historyToInclude.length; i++) {
+        final msg = historyToInclude[i];
+        print(
+          '  ${i + 1}. ${msg.type.name}: ${msg.content.substring(0, msg.content.length > 50 ? 50 : msg.content.length)}...',
+        );
+      }
     }
 
     return messages;
   }
 
   // Quick response for common queries (only for initial greetings)
-  String? getQuickResponse(String userMessage, List<ChatMessage> conversationHistory) {
+  String? getQuickResponse(
+    String userMessage,
+    List<ChatMessage> conversationHistory,
+  ) {
     final message = userMessage.toLowerCase().trim();
 
     // Only provide quick responses for greetings if this is the start of conversation
@@ -177,14 +268,54 @@ class OpenRouterService {
     }
 
     // Check for exact greetings only
-    final greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening'];
+    final greetings = [
+      'hello',
+      'hi',
+      'hey',
+      'good morning',
+      'good afternoon',
+      'good evening',
+    ];
     for (final greeting in greetings) {
       if (message == greeting || message.startsWith('$greeting ')) {
-        return ConstitutionContext.quickResponses[greeting] ?? ConstitutionContext.quickResponses['hello'];
+        return ConstitutionContext.quickResponses[greeting] ??
+            ConstitutionContext.quickResponses['hello'];
       }
     }
 
     return null; // Let AI handle everything else for better conversation flow
+  }
+
+  // Offline fallback responses for common topics
+  String? getOfflineResponse(String userMessage) {
+    final message = userMessage.toLowerCase().trim();
+
+    // Basic offline responses for common constitutional topics
+    if (message.contains('rights') || message.contains('constitution')) {
+      return 'The Bill of Rights (Articles 19-59 of the Constitution) guarantees fundamental rights including equality, life, liberty, security, privacy, expression, assembly, movement, and property. These rights are protected and can only be limited in specific circumstances as provided by law.';
+    }
+
+    if (message.contains('vote') || message.contains('election')) {
+      return 'Under Article 38 of the Constitution, every Kenyan citizen has the right to vote. You must register with IEBC, be 18 years or older, and have a valid ID. Elections are held every 5 years for President, Governors, MPs, and County Representatives.';
+    }
+
+    if (message.contains('employment') || message.contains('work')) {
+      return 'The Employment Act protects workers\' rights including fair wages, safe working conditions, leave entitlements, and protection from unfair dismissal. Article 41 of the Constitution guarantees fair labor practices and the right to form trade unions.';
+    }
+
+    if (message.contains('land') || message.contains('property')) {
+      return 'Land rights are protected under Chapter 5 of the Constitution and the Land Act. Kenyans have rights to own, use, and transfer land. The government can only acquire land for public use with fair compensation. Community land rights are also protected.';
+    }
+
+    if (message.contains('gender') || message.contains('women')) {
+      return 'Article 27 guarantees equality and prohibits discrimination based on gender. The Constitution promotes women\'s representation in government and protects against gender-based violence. The two-thirds gender rule ensures women\'s participation in leadership.';
+    }
+
+    if (message.contains('health') || message.contains('medical')) {
+      return 'Article 43 guarantees the right to healthcare. The Health Act provides for accessible, affordable, and quality healthcare services. The government must provide emergency treatment and essential health services to all Kenyans.';
+    }
+
+    return null; // Let the main error handling take over
   }
 
   // Check if the service is available
@@ -194,16 +325,33 @@ class OpenRouterService {
         print('🔵 Checking OpenRouter service availability...');
       }
 
-      final response = await http.get(
-        Uri.parse('$_baseUrl/models'),
-        headers: _headers,
-      ).timeout(const Duration(seconds: 5)); // Reduced timeout
+      // Try a simple chat completion test instead of models endpoint
+      final testRequestBody = {
+        'model': _model,
+        'messages': [
+          {'role': 'user', 'content': 'Hello'},
+        ],
+        'max_tokens': 5,
+      };
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/chat/completions'),
+            headers: _headers,
+            body: jsonEncode(testRequestBody),
+          )
+          .timeout(const Duration(seconds: 8));
 
       if (kDebugMode) {
         print('🔵 Service check response: ${response.statusCode}');
+        if (response.statusCode != 200) {
+          print('🔵 Service check response body: ${response.body}');
+        }
       }
 
-      return response.statusCode == 200;
+      // Consider both 200 and 401 as "available" since 401 means the service is reachable
+      // but there might be an auth issue that could be resolved
+      return response.statusCode == 200 || response.statusCode == 401;
     } catch (e) {
       if (kDebugMode) {
         print('🔴 Service availability check failed: $e');
@@ -247,7 +395,9 @@ Context: The user is asking about voting or elections. Refer to:
 ''';
     }
 
-    if (message.contains('employment') || message.contains('work') || message.contains('job')) {
+    if (message.contains('employment') ||
+        message.contains('work') ||
+        message.contains('job')) {
       return '''
 Context: The user is asking about employment. Refer to:
 - The Employment Act
@@ -267,7 +417,9 @@ Context: The user is asking about land rights. Refer to:
 ''';
     }
 
-    if (message.contains('gender') || message.contains('women') || message.contains('equality')) {
+    if (message.contains('gender') ||
+        message.contains('women') ||
+        message.contains('equality')) {
       return '''
 Context: The user is asking about gender equality. Refer to:
 - Article 27 of the Constitution (equality and non-discrimination)
@@ -299,11 +451,8 @@ Context: The user is asking about gender equality. Refer to:
       final requestBody = {
         'model': 'tngtech/deepseek-r1t2-chimera:free',
         'messages': [
-          {
-            'role': 'user',
-            'content': 'What is the meaning of life?'
-          }
-        ]
+          {'role': 'user', 'content': 'What is the meaning of life?'},
+        ],
       };
 
       final headers = {
@@ -318,11 +467,13 @@ Context: The user is asking about gender equality. Refer to:
         print('🔵 Exact test body: ${jsonEncode(requestBody)}');
       }
 
-      final response = await http.post(
-        Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
-        headers: headers,
-        body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+            headers: headers,
+            body: jsonEncode(requestBody),
+          )
+          .timeout(const Duration(seconds: 15));
 
       results['status_code'] = response.statusCode;
       results['response_body'] = response.body;
@@ -335,7 +486,8 @@ Context: The user is asking about gender equality. Refer to:
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         results['success'] = true;
-        results['content'] = data['choices']?[0]?['message']?['content'] ?? 'No content';
+        results['content'] =
+            data['choices']?[0]?['message']?['content'] ?? 'No content';
         results['message'] = 'Exact documentation format test successful';
       } else {
         results['success'] = false;
@@ -375,11 +527,13 @@ Context: The user is asking about gender equality. Refer to:
         'max_tokens': 50,
       };
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
-        headers: _headers,
-        body: jsonEncode(testRequestBody),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/chat/completions'),
+            headers: _headers,
+            body: jsonEncode(testRequestBody),
+          )
+          .timeout(const Duration(seconds: 10));
 
       results['status_code'] = response.statusCode;
       results['response_body'] = response.body;
@@ -402,7 +556,8 @@ Context: The user is asking about gender equality. Refer to:
         results['success'] = false;
         final errorData = jsonDecode(response.body);
         results['error'] = errorData['error']?['message'] ?? 'Unknown error';
-        results['message'] = 'API test failed with status ${response.statusCode}';
+        results['message'] =
+            'API test failed with status ${response.statusCode}';
       }
     } catch (e) {
       results['success'] = false;
@@ -411,6 +566,140 @@ Context: The user is asking about gender equality. Refer to:
 
       if (kDebugMode) {
         print('🔴 Test API error: $e');
+      }
+    }
+
+    return results;
+  }
+
+  // Simple test to verify API key and connection
+  Future<Map<String, dynamic>> testSimpleConnection() async {
+    final results = <String, dynamic>{};
+
+    try {
+      if (kDebugMode) {
+        print('🔵 Testing simple connection with API key...');
+        print('🔵 API Key (first 20 chars): ${_apiKey.substring(0, 20)}...');
+      }
+
+      // Very simple test request
+      final testRequestBody = {
+        'model': _model,
+        'messages': [
+          {'role': 'user', 'content': 'Say hello'},
+        ],
+        'max_tokens': 10,
+      };
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/chat/completions'),
+            headers: _headers,
+            body: jsonEncode(testRequestBody),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      results['status_code'] = response.statusCode;
+      results['response_body'] = response.body;
+
+      if (kDebugMode) {
+        print('🔵 Simple test response status: ${response.statusCode}');
+        print('🔵 Simple test response body: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        results['success'] = true;
+        results['message'] = 'Simple connection test successful';
+
+        if (data['choices'] != null && data['choices'].isNotEmpty) {
+          results['test_response'] = data['choices'][0]['message']['content'];
+        }
+      } else {
+        results['success'] = false;
+        results['message'] =
+            'Simple test failed with status ${response.statusCode}';
+        results['error'] = response.body;
+      }
+    } catch (e) {
+      results['success'] = false;
+      results['error'] = e.toString();
+      results['message'] = 'Simple connection test failed';
+
+      if (kDebugMode) {
+        print('🔴 Simple test error: $e');
+      }
+    }
+
+    return results;
+  }
+
+  // Test API key authentication
+  Future<Map<String, dynamic>> testApiKeyAuthentication() async {
+    final results = <String, dynamic>{};
+
+    try {
+      if (kDebugMode) {
+        print('🔵 Testing API key authentication...');
+        print('🔵 API Key length: ${_apiKey.length}');
+        print('🔵 API Key starts with: ${_apiKey.substring(0, 10)}...');
+      }
+
+      // Simple test with minimal request
+      final testRequestBody = {
+        'model': _model,
+        'messages': [
+          {'role': 'user', 'content': 'Hello'},
+        ],
+        'max_tokens': 10,
+      };
+
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/chat/completions'),
+            headers: _headers,
+            body: jsonEncode(testRequestBody),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      results['status_code'] = response.statusCode;
+      results['response_body'] = response.body;
+
+      if (kDebugMode) {
+        print('🔵 Auth test response status: ${response.statusCode}');
+        print('🔵 Auth test response body: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        results['success'] = true;
+        results['message'] = 'API key authentication successful';
+
+        if (data['choices'] != null && data['choices'].isNotEmpty) {
+          results['test_response'] = data['choices'][0]['message']['content'];
+        }
+      } else if (response.statusCode == 401) {
+        results['success'] = false;
+        results['message'] = 'API key authentication failed - 401 Unauthorized';
+        results['error'] = response.body;
+
+        if (kDebugMode) {
+          print('🔴 API key authentication failed');
+          print('🔴 Check if API key is valid and has proper permissions');
+        }
+      } else {
+        results['success'] = false;
+        results['message'] =
+            'API key test failed with status ${response.statusCode}';
+        results['error'] = response.body;
+      }
+    } catch (e) {
+      results['success'] = false;
+      results['error'] = e.toString();
+      results['message'] = 'API key authentication test failed';
+
+      if (kDebugMode) {
+        print('🔴 Auth test error: $e');
       }
     }
 

@@ -58,7 +58,7 @@ OpenRouter API (DeepSeek R1 Model)
 
 ### API Configuration
 - **Provider**: OpenRouter (https://openrouter.ai)
-- **Model**: deepseek/deepseek-r1-0528:free
+- **Model**: tngtech/deepseek-r1t2-chimera:free
 - **API Key**: Securely configured in OpenRouterService
 - **Headers**: Includes app identification for rankings
 

@@ -23,7 +23,7 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
   final ActivityService _activityService = ActivityService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  
+
   ChatSession? _currentSession;
   List<ChatMessage> _messages = [];
   bool _isLoading = false;
@@ -37,7 +37,7 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
 
   Future<void> _initializeChat() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
@@ -56,14 +56,14 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
       } else {
         // Create new session
         _currentSession = await _chatService.createChatSession(user.uid);
-        
+
         // Add welcome message
         final welcomeMessage = ChatMessage.assistant(
           'Hello! I\'m Haki, your AI assistant for Kenyan constitutional law and civic education. '
           'I can help you understand your rights, the Constitution, and various acts of parliament. '
-          'What would you like to learn about today?'
+          'What would you like to learn about today?',
         );
-        
+
         setState(() {
           _messages = [welcomeMessage];
         });
@@ -134,7 +134,9 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
     try {
       if (_currentSession != null) {
         // Refresh chat data
-        final result = await _refreshService.refreshChatData(_currentSession!.id);
+        final result = await _refreshService.refreshChatData(
+          _currentSession!.id,
+        );
 
         // Show feedback only if there are errors or warnings
         if (result.showFeedback && mounted) {
@@ -195,10 +197,7 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
               children: [
                 const Text(
                   'Suggested Questions',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 if (kDebugMode)
                   TextButton(
@@ -208,14 +207,16 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            ...suggestions.map((question) => ListTile(
-              title: Text(question),
-              onTap: () {
-                Navigator.pop(context);
-                _messageController.text = question;
-                _sendMessage();
-              },
-            )),
+            ...suggestions.map(
+              (question) => ListTile(
+                title: Text(question),
+                onTap: () {
+                  Navigator.pop(context);
+                  _messageController.text = question;
+                  _sendMessage();
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -245,8 +246,15 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
     );
 
     try {
+      // Test API key authentication first
+      final authResults = await OpenRouterService().testApiKeyAuthentication();
+
+      // Test simple connection first
+      final simpleResults = await OpenRouterService().testSimpleConnection();
+
       // Test OpenRouter API with exact documentation format
-      final exactResults = await OpenRouterService().testExactDocumentationFormat();
+      final exactResults = await OpenRouterService()
+          .testExactDocumentationFormat();
 
       // Test regular API connectivity
       final apiResults = await OpenRouterService().testApiConnectivity();
@@ -266,18 +274,52 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🔐 User Auth: ${user != null ? "✅ Logged in as ${user.email}" : "❌ Not logged in"}'),
+                  Text(
+                    '🔐 User Auth: ${user != null ? "✅ Logged in as ${user.email}" : "❌ Not logged in"}',
+                  ),
                   const SizedBox(height: 8),
-                  Text('🧪 Exact Format Test: ${exactResults['success'] ? "✅" : "❌"} ${exactResults['message']}'),
-                  if (exactResults['error'] != null) ...[
+                  Text(
+                    '🔑 API Key Auth: ${authResults['success'] ? "✅" : "❌"} ${authResults['message']}',
+                  ),
+                  if (authResults['error'] != null) ...[
                     const SizedBox(height: 4),
-                    Text('Exact Error: ${exactResults['error']}', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    Text(
+                      'Auth Error: ${authResults['error']}',
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
                   ],
                   const SizedBox(height: 8),
-                  Text('🤖 API Status: ${apiResults['success'] ? "✅" : "❌"} ${apiResults['message']}'),
+                  Text(
+                    '🔑 Simple Test: ${simpleResults['success'] ? "✅" : "❌"} ${simpleResults['message']}',
+                  ),
+                  if (simpleResults['error'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Simple Error: ${simpleResults['error']}',
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '🧪 Exact Format Test: ${exactResults['success'] ? "✅" : "❌"} ${exactResults['message']}',
+                  ),
+                  if (exactResults['error'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Exact Error: ${exactResults['error']}',
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '🤖 API Status: ${apiResults['success'] ? "✅" : "❌"} ${apiResults['message']}',
+                  ),
                   if (apiResults['error'] != null) ...[
                     const SizedBox(height: 4),
-                    Text('API Error: ${apiResults['error']}', style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    Text(
+                      'API Error: ${apiResults['error']}',
+                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                    ),
                   ],
                   const SizedBox(height: 8),
                   Text('📱 Session: ${_currentSession?.id ?? "No session"}'),
@@ -328,17 +370,11 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
               children: [
                 Text(
                   'Haki',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'AI Constitutional Assistant',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
@@ -375,7 +411,7 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
                           ),
                         ),
                 ),
-                
+
                 // Input area
                 _buildInputArea(),
               ],
@@ -391,28 +427,18 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
           const CircleAvatar(
             radius: 40,
             backgroundColor: Color(0xFF1B5E20),
-            child: Icon(
-              Icons.chat,
-              size: 40,
-              color: Colors.white,
-            ),
+            child: Icon(Icons.chat, size: 40, color: Colors.white),
           ),
           const SizedBox(height: 16),
           const Text(
             'Welcome to Haki Chat!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             'Ask me anything about Kenyan constitutional law,\nyour rights, and civic education.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -433,11 +459,13 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.type == MessageType.user;
     final isLoading = message.isLoading;
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isUser) ...[
@@ -455,7 +483,7 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
             ),
             const SizedBox(width: 8),
           ],
-          
+
           Flexible(
             child: Container(
               padding: const EdgeInsets.all(12),
@@ -481,17 +509,13 @@ class _HakiChatScreenState extends State<HakiChatScreen> {
                     ),
             ),
           ),
-          
+
           if (isUser) ...[
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 16,
               backgroundColor: Colors.grey[300],
-              child: const Icon(
-                Icons.person,
-                size: 16,
-                color: Colors.grey,
-              ),
+              child: const Icon(Icons.person, size: 16, color: Colors.grey),
             ),
           ],
         ],

@@ -4,6 +4,14 @@
 
 ---
 
+## 🌐 Live Demo
+
+You can view and use the Haki Yangu app online:
+
+👉 **[https://haki-yangu.vercel.app/](https://haki-yangu.vercel.app/)**
+
+The app is deployed on Vercel. Open the link above to explore all features directly in your browser!
+
 ## 📱 About the Project
 
 Haki Yangu bridges the gap between citizens and their constitutional rights by providing:
